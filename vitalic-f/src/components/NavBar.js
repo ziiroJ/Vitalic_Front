@@ -65,7 +65,7 @@ function NavBar() {
           <FontAwesomeIcon icon={faCalendarAlt} size="2x" />
           CALENDAR
         </NavButton>
-        <NavButton to="/">
+        <NavButton to="/home">
           <FontAwesomeIcon icon={faHouse} size="2x" />
           HOME
         </NavButton>

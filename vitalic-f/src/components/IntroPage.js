@@ -2,10 +2,11 @@ import React from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faCircleUser,
-  faLink,
+  faRightToBracket,
   faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom"; // useHistory 대신 useNavigate 사용
+import chartbg from "../img/chartImage.jpg";
 
 const Container = styled.div`
   width: 100%;
@@ -15,29 +16,6 @@ const Container = styled.div`
   padding: 0 20px;
 `;
 
-const TopNav = styled.h1`
-  display: flex;
-  justify-content: flex-end;
-  button {
-    color: #fff;
-    font-family: "Hanken Grotesk", sans-serif;
-    border: none;
-    background-color: transparent;
-  }
-  button:hover {
-    transition: 0.2s;
-    color: #f4cf85;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 2rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1rem;
-  }
-`;
-
 const Chart = styled.div`
   width: 100%;
   height: 300px;
@@ -45,31 +23,64 @@ const Chart = styled.div`
   border: 1px solid black;
   background-color: #aaa;
   margin: 20px 0;
-  margin-bottom: 40px;
+  margin-bottom: 50px;
+  position: relative;
+  overflow: hidden;
+`;
+const ChartImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: brightness(40%);
+`;
+
+const ChartText = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 1.25rem;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+  padding: 0 10px;
+  z-index: 1; /* 이미지 위에 글씨가 나타나도록 설정 */
+  b {
+    color: #f3a338;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+  }
 `;
 
 const TopSection = styled.p`
   font-family: "Hanken Grotesk", sans-serif;
   color: #fff;
-  font-size: 1.5rem;
-  margin: 50px 20px 70px 20px;
+  font-size: 2rem;
+  margin: 80px 20px 70px 20px;
   font-weight: bold;
   b {
     color: #f3a338;
-    font-size: 4rem;
+    font-size: 4.5rem;
   }
 
   @media (max-width: 768px) {
-    font-size: 1.25rem;
+    font-size: 1.75rem;
     b {
-      font-size: 3rem;
+      font-size: 3.5rem;
     }
   }
 
   @media (max-width: 480px) {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     b {
-      font-size: 2.25rem;
+      font-size: 2.75rem;
     }
   }
 `;
@@ -79,7 +90,6 @@ const ButtonSection = styled.div`
   width: 100%;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 100px;
   button {
     font-family: "Hanken Grotesk", sans-serif;
     background-color: #f4bd6f;
@@ -93,6 +103,7 @@ const ButtonSection = styled.div`
     align-items: center;
     justify-content: center;
     text-align: center;
+    word-break: keep-all;
   }
 
   button:hover {
@@ -117,27 +128,37 @@ const ButtonSection = styled.div`
 `;
 
 function IntroPage() {
+  const navigate = useNavigate(); // useNavigate 훅 사용
+
+  const handleSignUp = () => {
+    navigate("/join"); // 회원가입 버튼 클릭 시 HomePage로 이동
+  };
+
+  const handleLogin = () => {
+    navigate("/login"); // 로그인 버튼 클릭 시 HomePage로 이동
+  };
+
   return (
     <Container>
-      <TopNav>
-        <button>
-          <FontAwesomeIcon icon={faCircleUser} size="3x" />
-        </button>
-      </TopNav>
       <TopSection>
         <p>
           <b>Vitalic</b>과<br></br>당신의 금융을 관리 해 보세요
         </p>
       </TopSection>
-      <Chart></Chart>
+      <Chart>
+        <ChartImage src={chartbg} alt="Chart Background" />
+        <ChartText>
+          <b>Vitalic</b>이 당신의 금융을 관리해 드릴게요!
+        </ChartText>
+      </Chart>
       <ButtonSection>
-        <button>
+        <button onClick={handleSignUp}>
           <FontAwesomeIcon icon={faUserPlus} size="2x" />
           &nbsp;&nbsp; 회원가입 하기
         </button>
-        <button>
-          <FontAwesomeIcon icon={faLink} size="2x" />
-          &nbsp;&nbsp; 은행 연동하기
+        <button onClick={handleLogin}>
+          <FontAwesomeIcon icon={faRightToBracket} size="2x" />
+          &nbsp;&nbsp; 로그인 하기
         </button>
       </ButtonSection>
     </Container>
