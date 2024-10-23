@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleLeft } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Section = styled.div`
   font-family: "Hanken Grotesk", sans-serif;
@@ -196,17 +197,25 @@ function JoinPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("비밀번호가 일치하지 않습니다.");
       return;
     }
 
-    // 회원가입 처리 로직 (예: API 호출)
-
-    console.log("회원가입 데이터: ", formData);
-    navigate("/login"); // 회원가입 후 로그인 페이지로 이동
+    try {
+      // API 호출
+      const response = await axios.post(
+        "http://localhost:8080/user/signup",
+        formData
+      );
+      console.log("회원가입 성공:", response.data);
+      navigate("/login"); // 회원가입 후 로그인 페이지로 이동
+    } catch (error) {
+      console.error("회원가입 실패:", error);
+      alert("회원가입 중 문제가 발생했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (

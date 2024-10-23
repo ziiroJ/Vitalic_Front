@@ -48,8 +48,9 @@ function AppContent() {
         <Route path="/login" element={<LoginPage />} />
       </Routes>
 
-      {/* 현재 경로가 "/" (인트로 페이지)가 아닌 경우에만 NavBar를 렌더링 */}
+      {/* 현재 경로가 인트로, 가입, 로그인, admin 페이지가 아닌 경우에만 NavBar를 렌더링 */}
       {location.pathname !== "/" &&
+        location.pathname !== "/admin" &&
         location.pathname !== "/join" &&
         location.pathname !== "/login" && <NavBar />}
     </div>

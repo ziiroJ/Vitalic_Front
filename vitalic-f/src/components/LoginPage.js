@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleLeft } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // 기존 스타일과 동일하게 유지
 const Section = styled.div`
@@ -183,10 +184,22 @@ function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // 로그인 로직 추가
-    console.log("로그인 데이터: ", formData);
+
+    try {
+      const response = await axios.post("http://localhost:8080/user/signin ", {
+        userEmail: formData.email,
+        userPw: formData.password,
+      });
+
+      // 로그인 성공 시 처리
+      console.log("로그인 성공: ", response.data);
+      navigate("/home"); // 홈으로 이동
+    } catch (error) {
+      console.error("로그인 실패: ", error);
+      // 오류 처리 추가 (예: 알림 표시)
+    }
   };
 
   return (
@@ -221,8 +234,7 @@ function LoginPage() {
             <InputLabel>비밀번호</InputLabel>
             <InputSpan></InputSpan>
           </FormField>
-          {/* <SubmitButton type="submit">로그인</SubmitButton> */}
-          <SubmitButton onClick={() => navigate("/home")}>로그인</SubmitButton>
+          <SubmitButton type="submit">로그인</SubmitButton>
           <Guide>
             계정이 없으신가요?
             <Link to={"/join"}>회원가입</Link>
