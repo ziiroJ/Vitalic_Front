@@ -256,7 +256,7 @@ function CalendarPage() {
   // 추가 지출 항목 데이터
   const additionalExpenses = [
     { category: "교통", amount: 12000, icon: faTag, color: "#FFD2BD" },
-    { category: "기타", icon: faEllipsis, color: "#999" },
+    { category: "기타", amount: 12000, icon: faEllipsis, color: "#999" },
   ];
 
   // 총 지출 금액 계산
@@ -315,7 +315,7 @@ function CalendarPage() {
         />
       </CalendarWrap>
 
-      {/* 지출 섹션 */}
+      {/*월 지출 섹션 */}
       <Section>
         <SectionTitle>
           <FontAwesomeIcon
@@ -333,16 +333,20 @@ function CalendarPage() {
         <ExpenseDiv>
           <Expense>{totalExpenses.toLocaleString()}원</Expense>
           <ExpenseListWrap>
-            {expenses.map((expense, index) => (
-              <ExpenseList key={index}>
-                <ExpenseListIcon
-                  icon={expense.icon}
-                  size="2x"
-                  bgColor={expense.color}
-                />
-                &nbsp;{expense.category}: {expense.amount.toLocaleString()}원
-              </ExpenseList>
-            ))}
+            {/* 기존 지출 항목과 추가 지출 항목을 모두 렌더링 */}
+            {expenses
+              .concat(ExpenseShowMore ? additionalExpenses : []) // 더보기 시 추가 항목 포함
+              .sort((a, b) => b.amount - a.amount) // 금액 내림차순 정렬
+              .map((expense, index) => (
+                <ExpenseList key={index}>
+                  <ExpenseListIcon
+                    icon={expense.icon}
+                    size="2x"
+                    bgColor={expense.color}
+                  />
+                  &nbsp;{expense.category}: {expense.amount.toLocaleString()}원
+                </ExpenseList>
+              ))}
 
             {/* 더보기 아이콘 */}
             {!ExpenseShowMore && additionalExpenses.length > 0 && (
@@ -352,23 +356,6 @@ function CalendarPage() {
                 onClick={() => ExpenseSetShowMore(true)}
                 style={{ cursor: "pointer" }}
               />
-            )}
-
-            {/* 추가 지출 항목 */}
-            {ExpenseShowMore && (
-              <>
-                {additionalExpenses.map((item, index) => (
-                  <ExpenseList key={index}>
-                    <ExpenseListIcon
-                      icon={item.icon}
-                      size="2x"
-                      bgColor={item.color}
-                    />
-                    &nbsp;{item.category}{" "}
-                    {item.amount ? item.amount.toLocaleString() + "원" : ""}
-                  </ExpenseList>
-                ))}
-              </>
             )}
           </ExpenseListWrap>
         </ExpenseDiv>
