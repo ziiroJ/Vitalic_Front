@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -10,10 +10,16 @@ import {
   faFileInvoiceDollar,
   faAngleDown,
   faEllipsis,
+  faShop,
+  faCartShopping,
+  faHeart,
+  faBurger,
+  faUtensils,
 } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import axios from "axios";
 
 // Chart.js 등록
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -121,10 +127,8 @@ const Expense = styled.p`
     font-size: 1.5rem;
   }
 `;
-const getChartData = (expenses = [], additionalExpenses = []) => {
-  const allExpenses = [...expenses, ...additionalExpenses];
-
-  if (allExpenses.length === 0) {
+const getChartData = (expenses) => {
+  if (expenses.length === 0) {
     return {
       labels: [],
       datasets: [
@@ -138,29 +142,42 @@ const getChartData = (expenses = [], additionalExpenses = []) => {
       ],
     };
   }
+  // 지출을 금액 내림차순으로 정렬
+  const sortedExpenses = expenses.slice().sort((a, b) => b.amount - a.amount);
+  // 상위 3개를 가져오고 나머지를 "기타"로 묶기
+  const top3Expenses = sortedExpenses.slice(0, 3);
+  const others = sortedExpenses.slice(3);
+  const otherTotal = others.reduce((sum, expense) => sum + expense.amount, 0);
 
-  const labels = allExpenses.map((expense) => expense.category);
-  const data = allExpenses.map((expense) => expense.amount);
+  const labels = top3Expenses.map((expense) => expense.category);
+  const data = top3Expenses.map((expense) => expense.amount);
 
-  // 금액이 큰 순서대로 정렬
-  const sortedExpenses = allExpenses
-    .slice()
-    .sort((a, b) => b.amount - a.amount);
-  const maxAmount = sortedExpenses[0]?.amount || 1; // 최대 금액을 가져옴
+  // "기타" 항목 추가
+  if (otherTotal > 0) {
+    labels.push("기타");
+    data.push(otherTotal);
+  }
+
+  const maxAmount = Math.max(...data, otherTotal); // 최대 금액을 가져옴
 
   // 색상은 주황색 계열로 설정하며, 금액 비율에 따라 색상 변경
-  const backgroundColors = allExpenses.map((expense) => {
+  const backgroundColors = top3Expenses.map((expense) => {
     const percentage = expense.amount / maxAmount;
     const lightness = 100 - percentage * 50; // 가장 큰 금액은 진한 주황색(50% lightness), 작은 금액은 연한 주황색(100% lightness)
     return `hsla(36, 100%, ${lightness}%, 1)`; // H: 36 (주황색), S: 100%, L: 계산된 값
   });
+
+  // 기타 항목은 회색으로 설정
+  if (otherTotal > 0) {
+    backgroundColors.push("#999");
+  }
 
   return {
     labels: labels,
     datasets: [
       {
         label: "지출 카테고리",
-        data: data,
+        data: data.concat(otherTotal > 0 ? [otherTotal] : []), // "기타" 값을 data에 추가
         backgroundColor: backgroundColors,
         borderColor: "#444",
         borderWidth: 2,
@@ -187,11 +204,11 @@ const ChartContainer = styled.div`
   }
 `;
 
-const ExpenseChart = ({ expenses, additionalExpenses }) => {
+const ExpenseChart = ({ expenses }) => {
   return (
     <ChartContainer>
       <Doughnut
-        data={getChartData(expenses, additionalExpenses)}
+        data={getChartData(expenses)}
         options={{
           responsive: true,
           maintainAspectRatio: true, // 비율 유지
@@ -250,7 +267,7 @@ const Dot = styled.span`
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: ${(props) => props.color || "#999"};
+  background-color: #111;
   margin-right: 10px;
 `;
 
@@ -283,74 +300,131 @@ const ExpenseListIcon = styled(FontAwesomeIcon)`
   }
 `;
 
-function HomePage() {
+const HomePage = () => {
   const navigate = useNavigate();
   const [ExpenseShowMore, ExpenseSetShowMore] = useState(false); // 지출추가 항목의 표시 여부
   const [PatternShowMore, PatternSetShowMore] = useState(false); // 패턴화 추가 항목의 표시 여부
 
   const [currentMonth, setCurrentMonth] = useState(new Date()); // 현재 달을 저장
-
+  const [expenses, setExpenses] = useState([]);
+  const [patterns, setPatterns] = useState([]); // 패턴화된 지출을 저장할 상태 추가
+  const [loading, setLoading] = useState(true); // 로딩 상태 추가
   // 원하는 형식으로 날짜를 설정합니다.
   const formattedDate = `${currentMonth.getMonth() + 1}월`;
   // 이전 달로 변경하는 함수
   const handlePrevMonth = () => {
-    setCurrentMonth((prevDate) => {
-      const newDate = new Date(prevDate); // 새로운 Date 객체 생성
-      newDate.setMonth(prevDate.getMonth() - 1);
-      return newDate;
-    });
+    setCurrentMonth(
+      new Date(currentMonth.setMonth(currentMonth.getMonth() - 1))
+    );
   };
 
   // 다음 달로 변경하는 함수
   const handleNextMonth = () => {
-    setCurrentMonth((prevDate) => {
-      const newDate = new Date(prevDate); // 새로운 Date 객체 생성
-      newDate.setMonth(prevDate.getMonth() + 1);
-      return newDate;
-    });
+    setCurrentMonth(
+      new Date(currentMonth.setMonth(currentMonth.getMonth() + 1))
+    );
   };
 
-  // 더미 데이터
-
-  const [expenses, setExpenses] = useState([
-    { category: "카페·간식", amount: 20000, icon: faMugHot, color: "#5D3800" },
-    { category: "쇼핑", amount: 150000, icon: faTag, color: "#FFD2BD" },
+  const categories = [
     {
-      category: "공과금",
-      amount: 50000,
+      category: "입금",
       icon: faFileInvoiceDollar,
-      color: "#5E76FF",
+      amount: 0,
     },
-  ]);
+    { category: "이체", icon: faAngleLeft, amount: 0 },
+    { category: "편의점", icon: faShop, amount: 0 },
+    { category: "마트", icon: faCartShopping, amount: 0 },
+    { category: "웹쇼핑", icon: faTag, amount: 0 },
+    { category: "엔터테인먼트", icon: faHeart, amount: 0 },
+    { category: "카페", icon: faMugHot, amount: 0 },
+    { category: "페스트푸드", icon: faBurger, amount: 0 },
+    { category: "식당", icon: faUtensils, amount: 0 },
+    { category: "기타", icon: faEllipsis, amount: 0 },
+  ];
 
-  const [patterns, setPatterns] = useState([
-    { category: "NETFLIX", amount: 10000, color: "black" },
-    { category: "TIVING", amount: 15000, color: "red" },
-    { category: "DISNEY PLUS", amount: 12000, color: "purple" },
-  ]);
+  // 백엔드에서 데이터 fetching
+  const fetchExpenses = async () => {
+    setLoading(true);
+    try {
+      // 여기에 백엔드 API 호출 추가
+      const response = await axios.get("/api/summary"); // API 엔드포인트에 맞게 수정
+      setExpenses(response.data); // 지출 데이터를 상태에 저장
+    } catch (error) {
+      console.error("지출 데이터를 가져오는 중 오류 발생:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // 컴포넌트가 마운트될 때 데이터 fetching
+  useEffect(() => {
+    fetchExpenses();
+    fetchPatterns();
+  }, []);
 
-  // 총 지출 금액 계산
-  const totalExpenses = expenses.reduce(
-    (total, expense) => total + expense.amount,
-    0
-  );
+  // 추가된 카테고리의 지출 금액을 계산하여 업데이트
+  const updateExpenses = (allExpenses) => {
+    const updatedCategories = categories.map((category) => {
+      const totalAmount = allExpenses
+        .filter((expense) => expense.category === category.category)
+        .reduce((sum, expense) => sum + expense.amount, 0);
+      return { ...category, amount: totalAmount };
+    });
+
+    return updatedCategories;
+  };
+
+  // 더미 데이터 (각 월별 지출)
+  const allExpenses = [
+    { category: "카페", amount: 20000, month: 9 },
+    { category: "웹쇼핑", amount: 150000, month: 9 },
+    { category: "엔터테인먼트", amount: 50000, month: 9 },
+    { category: "식당", amount: 30000, month: 9 },
+    { category: "기타", amount: 70000, month: 9 },
+    { category: "식당", amount: 30000, month: 10 },
+    { category: "기타", amount: 70000, month: 10 },
+    { category: "페스트푸드", amount: 50000, month: 10 },
+  ];
+
+  const filteredExpenses = updateExpenses(
+    allExpenses.filter(
+      (expense) => expense.month === currentMonth.getMonth() + 1
+    )
+  ).sort((a, b) => b.amount - a.amount);
+
+  // // 백엔드에서 패턴화된 지출 데이터 fetching
+  const fetchPatterns = async () => {
+    setLoading(true);
+    try {
+      // const response = await axios.get("/api/patterns"); // API 엔드포인트에 맞게 수정
+      // setPatterns(response.data); // 패턴 데이터를 상태에 저장
+
+      // 더미 데이터 설정
+      const dummyPatterns = [
+        { source: "NETFLIX", amount: 30000, date: "5일" },
+        { source: "DISNEY", amount: 45000, date: "5일" },
+        { source: "SKT", amount: 20000, date: "5일" },
+        { source: "LG", amount: 60000, date: "5일" },
+        { source: "TVING", amount: 100000, date: "5일" },
+        { source: "보험", amount: 15000, date: "5일" },
+      ];
+      setPatterns(dummyPatterns);
+      //
+    } catch (error) {
+      console.error("패턴화된 지출 데이터를 가져오는 중 오류 발생:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatterns(); // 컴포넌트가 마운트될 때 데이터 fetching
+  }, []);
+
   // 총 패턴화된 금액 계산
   const totalPatterns = patterns.reduce(
     (total, pattern) => total + pattern.amount,
     0
   );
-
-  // 지출 추가 항목 데이터
-  const additionalExpenses = [
-    { category: "교통", amount: 12000, icon: faTag, color: "#FFD2BD" },
-    { category: "기타", amount: 12000, icon: faEllipsis, color: "#999" },
-  ];
-
-  // 패턴화된 추가 항목 데이터
-  const additionalPatterns = [
-    { category: "HBO MAX", amount: 9000, color: "blue" },
-    { category: "SPOTIFY", amount: 7000, color: "green" },
-  ];
 
   return (
     <Container>
@@ -377,48 +451,34 @@ function HomePage() {
           />
         </SectionTitle>
         <ExpenseDiv>
-          <Expense>{totalExpenses.toLocaleString()}원</Expense>
-          <ExpenseChart
-            expenses={expenses}
-            additionalExpenses={additionalExpenses}
-          />
+          <Expense>
+            {filteredExpenses
+              .reduce((acc, expense) => acc + expense.amount, 0)
+              .toLocaleString()}{" "}
+            원
+          </Expense>
+          <ExpenseChart expenses={filteredExpenses} />
           <ExpenseListWrap>
-            {expenses.map((expense, index) => (
-              <ExpenseList key={index}>
-                <ExpenseListIcon
-                  icon={expense.icon}
-                  size="2x"
-                  bgColor={expense.color}
-                />
-                &nbsp;{expense.category} {expense.amount.toLocaleString()}원
-              </ExpenseList>
-            ))}
-
-            {/* showMore가 false일 때만 faAngleDown을 렌더링 */}
-            {!ExpenseShowMore && additionalExpenses.length > 0 && (
+            {ExpenseShowMore
+              ? filteredExpenses.map((expense, index) => (
+                  <ExpenseList key={index}>
+                    <ExpenseListIcon icon={expense.icon} />
+                    &nbsp;{expense.category} {expense.amount.toLocaleString()}원
+                  </ExpenseList>
+                ))
+              : filteredExpenses.slice(0, 3).map((expense, index) => (
+                  <ExpenseList key={index}>
+                    <ExpenseListIcon icon={expense.icon} />
+                    &nbsp;{expense.category} {expense.amount.toLocaleString()}원
+                  </ExpenseList>
+                ))}
+            {!ExpenseShowMore && (
               <FontAwesomeIcon
                 icon={faAngleDown}
                 size="2x"
                 onClick={() => ExpenseSetShowMore(true)}
                 style={{ cursor: "pointer" }}
               />
-            )}
-
-            {/* showMore가 true일 때만 추가 항목을 렌더링 */}
-            {ExpenseShowMore && (
-              <>
-                {additionalExpenses.map((item, index) => (
-                  <ExpenseList key={index}>
-                    <ExpenseListIcon
-                      icon={item.icon}
-                      size="2x"
-                      bgColor={item.color}
-                    />
-                    &nbsp;{item.category}{" "}
-                    {item.amount ? item.amount.toLocaleString() + "원" : ""}
-                  </ExpenseList>
-                ))}
-              </>
             )}
           </ExpenseListWrap>
         </ExpenseDiv>
@@ -427,42 +487,38 @@ function HomePage() {
       <Section>
         <SectionTitle>패턴화된 지출</SectionTitle>
         <ExpenseDiv>
-          <Expense>{totalPatterns.toLocaleString()}원</Expense>
-          <ExpenseListWrap>
-            {patterns.map((pattern, index) => (
-              <ExpenseList key={index}>
-                <Dot color={pattern.color} /> {/* 점을 표시 */}
-                &nbsp;{pattern.category}: {pattern.amount.toLocaleString()}원
-              </ExpenseList>
-            ))}
+          {loading ? ( // 로딩 중이면 로딩 메시지 표시
+            <Expense>로딩 중...</Expense>
+          ) : (
+            <>
+              <Expense>{totalPatterns.toLocaleString()}원</Expense>
+              <ExpenseListWrap>
+                {patterns
+                  .slice(0, PatternShowMore ? patterns.length : 3)
+                  .map((pattern, index) => (
+                    <ExpenseList key={index}>
+                      <Dot />
+                      &nbsp;{pattern.source}&nbsp;&nbsp;&nbsp;-&nbsp;
+                      {pattern.amount.toLocaleString()}원
+                    </ExpenseList>
+                  ))}
 
-            {/* showMore가 false일 때만 faAngleDown을 렌더링 */}
-            {!PatternShowMore && additionalPatterns.length > 0 && (
-              <FontAwesomeIcon
-                icon={faAngleDown}
-                size="2x"
-                onClick={() => PatternSetShowMore(true)}
-                style={{ cursor: "pointer" }}
-              />
-            )}
-
-            {/* showMore가 true일 때만 추가 항목을 렌더링 */}
-            {PatternShowMore && (
-              <>
-                {additionalPatterns.map((item, index) => (
-                  <ExpenseList key={index}>
-                    <Dot color={item.color} /> {/* 점을 표시 */}
-                    &nbsp;{item.category}: {(item.amount || 0).toLocaleString()}
-                    원
-                  </ExpenseList>
-                ))}
-              </>
-            )}
-          </ExpenseListWrap>
+                {patterns.length > 3 &&
+                  !PatternShowMore && ( // 3개 이상의 패턴일 경우
+                    <FontAwesomeIcon
+                      icon={faAngleDown}
+                      size="2x"
+                      onClick={() => PatternSetShowMore(true)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  )}
+              </ExpenseListWrap>
+            </>
+          )}
         </ExpenseDiv>
       </Section>
     </Container>
   );
-}
+};
 
 export default HomePage;
