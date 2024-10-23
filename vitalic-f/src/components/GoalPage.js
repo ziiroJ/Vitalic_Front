@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleUser, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // Styled Components
 const Container = styled.div`
@@ -234,31 +235,64 @@ const GoalButton = styled.button`
 function GoalPage({ goal, setGoal }) {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-  const [yearGoal, setYearGoal] = useState("");
   const [monthGoal, setMonthGoal] = useState("");
+  const [weekGoal, setWeekGoal] = useState("");
   const [dayGoal, setDayGoal] = useState("");
 
-  // 지출 데이터 (백엔드에서 받아와야 함)
-  const dayExpenses = 20000; // 하루 지출
-  const monthExpenses = 500000; // 이번 달 지출
-  const yearExpenses = 6000000; // 올해 지출
+  // 지출 데이터
+  const [monthlySummary, setMonthlySummary] = useState({});
+  const [weeklySummary, setWeeklySummary] = useState({});
+  const [dailySummary, setDailySummary] = useState({});
 
   const today = new Date(); // 현재 날짜
   // 원하는 형식으로 날짜를 설정
   const formattedDate = `${today.getMonth() + 1}월`;
 
+  // 백엔드에서 데이터 받아오기 (useEffect 사용)
+  useEffect(() => {
+    // 백엔드 API 호출 (일일, 월간 지출 데이터)
+    const fetchData = async () => {
+      try {
+        const monthlyResponse = await axios.get("/api/monthly-summary");
+        const weeklyResponse = await axios.get("/api/weekly-summary");
+        const dailyResponse = await axios.get("/api/daily-summary");
+
+        setMonthlySummary(monthlyResponse.data);
+        setWeeklySummary(weeklyResponse.data);
+        setDailySummary(dailyResponse.data);
+      } catch (error) {
+        console.error("데이터 가져오기 실패:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   // 목표 대비 지출 비율 계산
-  const daySpentRatio = Math.min((dayExpenses / goal.day) * 100, 100); // 100% 초과하지 않도록
-  const monthSpentRatio = Math.min((monthExpenses / goal.month) * 100, 100);
-  const yearSpentRatio = Math.min((yearExpenses / goal.year) * 100, 100);
+  const daySpentRatio = Math.min(
+    (dailySummary.withdraw_total / (goal?.day || 1)) * 100,
+    100
+  );
+  const weekSpentRatio = Math.min(
+    (weeklySummary.withdraw_total / (goal?.week || 1)) * 100,
+    100
+  );
+  const monthSpentRatio = Math.min(
+    (monthlySummary.withdraw_total / (goal?.month || 1)) * 100,
+    100
+  );
 
   // 목표 초과 금액 계산
-  const dayExceededAmount = dayExpenses - goal.day;
-  const monthExceededAmount = monthExpenses - goal.month;
-  const yearExceededAmount = yearExpenses - goal.year;
+  const dayExceededAmount =
+    (dailySummary.withdraw_total || 0) - (goal?.day || 0);
+  const weekExceededAmount =
+    (weeklySummary.withdraw_total || 0) - (goal?.week || 0);
+  const monthExceededAmount =
+    (monthlySummary.withdraw_total || 0) - (goal?.month || 0);
 
-  // 금액쉼표
+  // 금액 쉼표
   const formatCurrency = (amount) => {
+    if (typeof amount !== "number" || isNaN(amount)) return "0";
     return amount.toLocaleString();
   };
 
@@ -272,12 +306,27 @@ function GoalPage({ goal, setGoal }) {
   const handleSetGoal = () => {
     // 입력값을 숫자로 변환
     setGoal({
-      year: Number(yearGoal),
       month: Number(monthGoal),
+      week: Number(weekGoal),
       day: Number(dayGoal),
     });
     setShowModal(false); // 목표 설정 후 모달 닫기
   };
+
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowModal(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
   return (
     <Container>
       <TopNav>
@@ -295,10 +344,11 @@ function GoalPage({ goal, setGoal }) {
             <FontAwesomeIcon icon={faPenToSquare} size="2x" />
           </EditButton>
         </SectionTop>
+
         {/* 하루 지출 목표 */}
         <GoalWrapper>
           <GoalLabel isExceeded={dayExceededAmount > 0}>
-            하루 지출 목표: {formatCurrency(goal.day)}원
+            하루 지출 목표: {formatCurrency(goal?.day)}원
             {dayExceededAmount > 0 && (
               <ExceededAmount>
                 +{formatCurrency(dayExceededAmount)}원
@@ -309,10 +359,26 @@ function GoalPage({ goal, setGoal }) {
             <ProgressBar width={`${daySpentRatio}%`} />
           </ProgressBarContainer>
         </GoalWrapper>
+
+        {/* 이번주 지출 목표 */}
+        <GoalWrapper>
+          <GoalLabel isExceeded={weekExceededAmount > 0}>
+            이번주 지출 목표: {formatCurrency(goal?.week)}원
+            {weekExceededAmount > 0 && (
+              <ExceededAmount>
+                +{formatCurrency(weekExceededAmount)}원
+              </ExceededAmount>
+            )}
+          </GoalLabel>
+          <ProgressBarContainer>
+            <ProgressBar width={`${weekSpentRatio}%`} />
+          </ProgressBarContainer>
+        </GoalWrapper>
+
         {/* 이번 달 지출 목표 */}
         <GoalWrapper>
           <GoalLabel isExceeded={monthExceededAmount > 0}>
-            {formattedDate} 지출 목표: {formatCurrency(goal.month)}원
+            {formattedDate} 지출 목표: {formatCurrency(goal?.month)}원
             {monthExceededAmount > 0 && (
               <ExceededAmount>
                 +{formatCurrency(monthExceededAmount)}원
@@ -323,39 +389,25 @@ function GoalPage({ goal, setGoal }) {
             <ProgressBar width={`${monthSpentRatio}%`} />
           </ProgressBarContainer>
         </GoalWrapper>
-        {/* 올해 지출 목표 */}
-        <GoalWrapper>
-          <GoalLabel isExceeded={yearExceededAmount > 0}>
-            올해 지출 목표: {formatCurrency(goal.year)}원
-            {yearExceededAmount > 0 && (
-              <ExceededAmount>
-                +{formatCurrency(yearExceededAmount)}원
-              </ExceededAmount>
-            )}
-          </GoalLabel>
-          <ProgressBarContainer>
-            <ProgressBar width={`${yearSpentRatio}%`} />
-          </ProgressBarContainer>
-        </GoalWrapper>
       </Section>
 
       {/* 모달 팝업 */}
       {showModal && (
         <ModalOverlay onClick={handleOverlayClick}>
           <ModalContent onClick={handleModalClick}>
-            <Section mHeight="250px;">
+            <Section>
               <SectionTitleS>{formattedDate} 지출 목표 설정</SectionTitleS>
               <InputContainerWrap>
                 <InputContainer>
                   <InputBox
-                    placeholder="YEAR"
-                    value={yearGoal}
-                    onChange={(e) => setYearGoal(e.target.value)}
-                  />
-                  <InputBox
                     placeholder="MONTH"
                     value={monthGoal}
                     onChange={(e) => setMonthGoal(e.target.value)}
+                  />
+                  <InputBox
+                    placeholder="WEEK"
+                    value={weekGoal}
+                    onChange={(e) => setWeekGoal(e.target.value)}
                   />
                   <InputBox
                     placeholder="DAY"
@@ -372,4 +424,5 @@ function GoalPage({ goal, setGoal }) {
     </Container>
   );
 }
+
 export default GoalPage;
