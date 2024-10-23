@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -14,6 +14,7 @@ import {
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // Styled Components
 const Container = styled.div`
@@ -239,7 +240,126 @@ function CalendarPage() {
     { title: "+35,000", date: "2024-10-16", classNames: ["plus-event"] },
     { title: "-1,000", date: "2024-10-01", classNames: ["minus-event"] },
     { title: "+20,000", date: "2024-10-10", classNames: ["plus-event"] },
+    { title: "-20,000", date: "2024-10-10", classNames: ["minus-event"] },
+    { title: "-1,000", date: "2024-11-11", classNames: ["minus-event"] },
+    { title: "+20,000", date: "2024-12-20", classNames: ["plus-event"] },
+    { title: "-40,000", date: "2024-08-10", classNames: ["minus-event"] },
   ];
+
+  // 백엔드 API에서 받은 데이터를 처리하는 함수
+  const fetchEvents = async () => {
+    try {
+      // const response = await axios.get("http://127.0.0.1:8000/api/summary"); // 백엔드에서 데이터를 받아옴
+      // const { year, month, daily_totals } = response.data;
+
+      // 임시 데이터
+      const response = {
+        data: {
+          year: 2023,
+          month: 9,
+          daily_totals: {
+            1: {
+              deposits: 0,
+              withdrawals: 135050,
+            },
+            2: {
+              deposits: 19350,
+              withdrawals: 18220,
+            },
+            3: {
+              deposits: 27540,
+              withdrawals: 105670,
+            },
+            4: {
+              deposits: 0,
+              withdrawals: 105140,
+            },
+            5: {
+              deposits: 27760,
+              withdrawals: 234740,
+            },
+            6: {
+              deposits: 25510,
+              withdrawals: 127350,
+            },
+            7: {
+              deposits: 0,
+              withdrawals: 70170,
+            },
+            8: {
+              deposits: 27010,
+              withdrawals: 87500,
+            },
+            9: {
+              deposits: 0,
+              withdrawals: 55190,
+            },
+            10: {
+              deposits: 0,
+              withdrawals: 141470,
+            },
+            11: {
+              deposits: 0,
+              withdrawals: 79000,
+            },
+            12: {
+              deposits: 0,
+              withdrawals: 186520,
+            },
+            13: {
+              deposits: 0,
+              withdrawals: 168260,
+            },
+            14: {
+              deposits: 0,
+              withdrawals: 85680,
+            },
+            15: {
+              deposits: 3500000,
+              withdrawals: 214140,
+            },
+            30: {
+              deposits: 0,
+              withdrawals: 178100,
+            },
+          },
+        },
+      };
+      const { year, month, daily_totals } = response.data;
+
+      // daily_totals 데이터를 FullCalendar 이벤트 형식으로 변환
+      const newEvents = Object.keys(daily_totals)
+        .map((day) => {
+          const { deposits, withdrawals } = daily_totals[day];
+          const date = `${year}-${String(month).padStart(
+            2,
+            "0"
+          )}-${day.padStart(2, "0")}`; // 연도와 월을 동적으로 설정
+
+          // 입금과 출금을 각각 다른 이벤트로 설정
+          const depositEvent =
+            deposits > 0
+              ? { title: `+${deposits}`, date, classNames: ["plus-event"] }
+              : null;
+          const withdrawalEvent =
+            withdrawals > 0
+              ? { title: `-${withdrawals}`, date, classNames: ["minus-event"] }
+              : null;
+
+          return [depositEvent, withdrawalEvent].filter(Boolean); // null 제거
+        })
+        .flat();
+
+      setEvents(newEvents); // 이벤트 설정
+    } catch (error) {
+      console.error("이벤트 데이터를 불러오는 중 오류가 발생했습니다.", error);
+    }
+  };
+
+  // 컴포넌트가 처음 렌더링될 때 이벤트 데이터를 받아옴
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   // 지출 항목 데이터
   const [expenses, setExpenses] = useState([
