@@ -442,58 +442,58 @@ function GoalPage({ goal, setGoal }) {
   const today = new Date(); // 현재 날짜
   const formattedDate = `${today.getMonth() + 1}월`;
 
-  // 백엔드에서 데이터 받아오기 (useEffect 사용)
-  // useEffect(() => {
-  // 	const fetchData = async () => {
-  // 		try {
-  // 			// 하나의 API로 모든 데이터를 가져옴
-  // 			const response = await axios.post(
-  // 				"http://127.0.0.1:8000/api/report/mwd"
-  // 			);
-  // 			const data = response.data;
-
-  // 			// 각각의 지출 요약 데이터로 설정
-  // 			setMonthlySummary(data.monthly_summary || {});
-  // 			setWeeklySummary(data.weekly_summary || {});
-  // 			setDailySummary(data.daily_summary || {});
-  // 		} catch (error) {
-  // 			console.error("데이터 가져오기 실패:", error);
-  // 		}
-  // 	};
-
-  // 	fetchData();
-  // }, []);
-
-  // 더미 데이터////////////////////////////////////////////////////////////////////////////////////
-  const dummyData = {
-    monthly_summary: {
-      withdraw_total: 150000, // 예시: 월간 지출
-    },
-    weekly_summary: {
-      withdraw_total: 35000, // 예시: 주간 지출
-    },
-    daily_summary: {
-      withdraw_total: 5000, // 예시: 일일 지출
-    },
-  };
-
-  // fetchData 함수 수정
+  백엔드에서 데이터 받아오기 (useEffect 사용)
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // 더미 데이터를 사용하여 직접 설정
-        setMonthlySummary(dummyData.monthly_summary);
-        setWeeklySummary(dummyData.weekly_summary);
-        setDailySummary(dummyData.daily_summary);
-      } catch (error) {
-        console.error("데이터 가져오기 실패:", error);
-      }
-    };
+  	const fetchData = async () => {
+  		try {
+  			// 하나의 API로 모든 데이터를 가져옴
+  			const response = await axios.post(
+  				"http://127.0.0.1:8000/api/report/mwd"
+  			);
+  			const data = response.data;
 
-    fetchData();
+  			// 각각의 지출 요약 데이터로 설정
+  			setMonthlySummary(data.monthly_summary || {});
+  			setWeeklySummary(data.weekly_summary || {});
+  			setDailySummary(data.daily_summary || {});
+  		} catch (error) {
+  			console.error("데이터 가져오기 실패:", error);
+  		}
+  	};
+
+  	fetchData();
   }, []);
 
-  /////////////////////////////////////////////////////////////////////////////
+  // // 더미 데이터////////////////////////////////////////////////////////////////////////////////////
+  // const dummyData = {
+  //   monthly_summary: {
+  //     withdraw_total: 150000, // 예시: 월간 지출
+  //   },
+  //   weekly_summary: {
+  //     withdraw_total: 35000, // 예시: 주간 지출
+  //   },
+  //   daily_summary: {
+  //     withdraw_total: 5000, // 예시: 일일 지출
+  //   },
+  // };
+
+  // // fetchData 함수 수정
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       // 더미 데이터를 사용하여 직접 설정
+  //       setMonthlySummary(dummyData.monthly_summary);
+  //       setWeeklySummary(dummyData.weekly_summary);
+  //       setDailySummary(dummyData.daily_summary);
+  //     } catch (error) {
+  //       console.error("데이터 가져오기 실패:", error);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, []);
+
+  // /////////////////////////////////////////////////////////////////////////////
 
   // 목표 대비 지출 비율 계산
   const daySpentRatio = Math.min(
