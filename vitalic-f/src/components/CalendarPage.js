@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCircleUser,
-  faAngleLeft,
-  faAngleRight,
-  faMugHot,
-  faTag,
-  faFileInvoiceDollar,
-  faAngleDown,
-  faEllipsis,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCircleUser } from "@fortawesome/free-solid-svg-icons";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useNavigate } from "react-router-dom";
@@ -188,38 +179,23 @@ const ExpenseList = styled.div`
   }
 `;
 
-const ExpenseListIcon = styled(FontAwesomeIcon)`
-  background-color: ${(props) => props.bgColor || "#fff"};
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
-  color: #222;
-  margin-right: 10px;
-  @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
-  }
-  @media (max-width: 480px) {
-    width: 30px;
-    height: 30px;
-    margin-right: 5px;
-  }
-  svg {
-    width: 50%;
-    height: 50%;
-  }
+const Dot = styled.span`
+  width: 8px; /* 도트의 너비 */
+  height: 8px; /* 도트의 높이 */
+  border-radius: 50%; /* 원형으로 만들기 */
+  display: inline-block; /* 인라인 블록으로 표시 */
+  margin-right: 8px; /* 텍스트와의 간격 */
+  background-color: ${(props) =>
+    props.isMinus ? "#e74c3c" : "#2ecc71"}; /* 출금과 입금에 따라 색상 설정 */
 `;
 
 function CalendarPage() {
   const navigate = useNavigate();
 
   // 상태 관리
-  const [ExpenseShowMore, ExpenseSetShowMore] = useState(false);
+  const [transactionList, setTransactionList] = useState([]); // 거래 내역 상태 추가
   const [currentMonth, setCurrentMonth] = useState("");
+  const [currentYear, setCurrentYear] = useState("");
   const [events, setEvents] = useState([]);
   const calendarRef = useRef(null); // FullCalendar 제어를 위한 ref 생성
 
@@ -287,6 +263,42 @@ function CalendarPage() {
 
       setEvents(newEvents);
       console.log("Fetched events:", newEvents);
+
+      // 거래 내역 생성
+      const transactionMap = {};
+      Object.keys(daily_totals).forEach((day) => {
+        const { deposits, withdrawals } = daily_totals[day];
+        const date = `${year}-${String(month).padStart(2, "0")}-${String(
+          day
+        ).padStart(2, "0")}`;
+
+        if (!transactionMap[date]) {
+          transactionMap[date] = [];
+        }
+
+        if (deposits > 0) {
+          transactionMap[date].push({
+            title: `+${deposits.toLocaleString()}원 (입금)`,
+            classNames: ["plus-event"],
+          });
+        }
+        if (withdrawals > 0) {
+          transactionMap[date].push({
+            title: `-${withdrawals.toLocaleString()}원 (출금)`,
+            classNames: ["minus-event"],
+          });
+        }
+      });
+
+      // 거래 내역 상태 업데이트
+      const groupedTransactions = Object.entries(transactionMap).map(
+        ([date, transactions]) => ({
+          date,
+          transactions,
+        })
+      );
+
+      setTransactionList(groupedTransactions);
     } catch (error) {
       console.error("이벤트 데이터를 불러오는 중 오류가 발생했습니다.", error);
     }
@@ -298,45 +310,10 @@ function CalendarPage() {
     const year = currentStart.getFullYear();
     const month = currentStart.getMonth() + 1;
     setCurrentMonth(monthNames[month - 1]);
+    setCurrentYear(year);
 
     // 변경된 연도와 월로 fetchData 호출
     fetchData(year, month);
-  };
-
-  // 지출 항목 데이터
-  const [expenses, setExpenses] = useState([
-    { category: "카페·간식", amount: 20000, icon: faMugHot, color: "#5D3800" },
-    { category: "쇼핑", amount: 150000, icon: faTag, color: "#FFD2BD" },
-    {
-      category: "공과금",
-      amount: 50000,
-      icon: faFileInvoiceDollar,
-      color: "#5E76FF",
-    },
-  ]);
-
-  // 추가 지출 항목 데이터
-  const additionalExpenses = [
-    { category: "교통", amount: 12000, icon: faTag, color: "#FFD2BD" },
-    { category: "기타", amount: 12000, icon: faEllipsis, color: "#999" },
-  ];
-
-  // 총 지출 금액 계산
-  const totalExpenses = expenses.reduce(
-    (total, expense) => total + expense.amount,
-    0
-  );
-
-  // 이전 달로 이동
-  const handlePrevMonth = () => {
-    const calendarApi = calendarRef.current.getApi(); // FullCalendar API 가져오기
-    calendarApi.prev(); // 이전 달로 이동
-  };
-
-  // 다음 달로 이동
-  const handleNextMonth = () => {
-    const calendarApi = calendarRef.current.getApi(); // FullCalendar API 가져오기
-    calendarApi.next(); // 다음 달로 이동
   };
 
   return (
@@ -377,45 +354,22 @@ function CalendarPage() {
       {/*월 지출 섹션 */}
       <Section>
         <SectionTitle>
-          <FontAwesomeIcon
-            icon={faAngleLeft}
-            onClick={handlePrevMonth}
-            style={{ cursor: "pointer" }}
-          />
-          &nbsp;{currentMonth} 지출&nbsp;
-          <FontAwesomeIcon
-            icon={faAngleRight}
-            onClick={handleNextMonth}
-            style={{ cursor: "pointer" }}
-          />
+          {currentYear} - {currentMonth} 거래 내역
         </SectionTitle>
         <ExpenseDiv>
-          <Expense>{totalExpenses.toLocaleString()}원</Expense>
           <ExpenseListWrap>
-            {/* 기존 지출 항목과 추가 지출 항목을 모두 렌더링 */}
-            {expenses
-              .concat(ExpenseShowMore ? additionalExpenses : []) // 더보기 시 추가 항목 포함
-              .sort((a, b) => b.amount - a.amount) // 금액 내림차순 정렬
-              .map((expense, index) => (
-                <ExpenseList key={index}>
-                  <ExpenseListIcon
-                    icon={expense.icon}
-                    size="2x"
-                    bgColor={expense.color}
-                  />
-                  &nbsp;{expense.category}: {expense.amount.toLocaleString()}원
-                </ExpenseList>
-              ))}
-
-            {/* 더보기 아이콘 */}
-            {!ExpenseShowMore && additionalExpenses.length > 0 && (
-              <FontAwesomeIcon
-                icon={faAngleDown}
-                size="2x"
-                onClick={() => ExpenseSetShowMore(true)}
-                style={{ cursor: "pointer" }}
-              />
-            )}
+            {transactionList.map((entry, index) => (
+              <div key={index}>
+                <h3>{entry.date}</h3> {/* 날짜 출력 */}
+                {entry.transactions.map((item, itemIndex) => (
+                  <ExpenseList key={itemIndex}>
+                    <Dot isMinus={item.classNames.includes("minus-event")} />{" "}
+                    {/* 도트 */}
+                    {item.title}
+                  </ExpenseList>
+                ))}
+              </div>
+            ))}
           </ExpenseListWrap>
         </ExpenseDiv>
       </Section>
