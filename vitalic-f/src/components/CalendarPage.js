@@ -101,6 +101,7 @@ const SectionTitle = styled.p`
 
 const CalendarWrap = styled.div`
   margin-bottom: 20px;
+  overflow: hidden;
   .fc-button {
     background-color: #f3a338;
     border: none;
@@ -115,20 +116,24 @@ const CalendarWrap = styled.div`
   .minus-event {
     border: none;
     background-color: #666;
+    padding: 0;
   }
   .plus-event {
     border: none;
     background-color: #3a76ff;
+    padding: 0;
   }
+
   /* 캘린더의 반응형 처리 */
   .fc {
     width: 100%;
-    font-size: 1rem;
+    font-size: 0.8rem;
+    height: auto;
     @media (max-width: 768px) {
-      font-size: 0.85rem;
+      font-size: 0.7rem;
     }
     @media (max-width: 480px) {
-      font-size: 0.75rem;
+      font-size: 0.6rem;
     }
   }
   .fc-toolbar-title {
@@ -234,132 +239,69 @@ function CalendarPage() {
     "12월",
   ];
 
-  // 초기 이벤트 데이터 (백엔드에서 받아오는 데이터로 대체 가능)
-  const initialEvents = [
-    { title: "-4,285", date: "2024-10-15", classNames: ["minus-event"] },
-    { title: "+35,000", date: "2024-10-16", classNames: ["plus-event"] },
-    { title: "-1,000", date: "2024-10-01", classNames: ["minus-event"] },
-    { title: "+20,000", date: "2024-10-10", classNames: ["plus-event"] },
-    { title: "-20,000", date: "2024-10-10", classNames: ["minus-event"] },
-    { title: "-1,000", date: "2024-11-11", classNames: ["minus-event"] },
-    { title: "+20,000", date: "2024-12-20", classNames: ["plus-event"] },
-    { title: "-40,000", date: "2024-08-10", classNames: ["minus-event"] },
-  ];
+  // 이벤트와 지출 데이터를 백엔드 API에서 받아오는 함수
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  // 백엔드 API에서 받은 데이터를 처리하는 함수
-  const fetchEvents = async () => {
+  // fetchData 함수 수정
+  const fetchData = async (year, month) => {
     try {
-      // const response = await axios.get("http://127.0.0.1:8000/api/summary"); // 백엔드에서 데이터를 받아옴
-      // const { year, month, daily_totals } = response.data;
+      const eventResponse = await axios.get(
+        `http://localhost:3003/api/report?year=${year}&month=${month}`
+      );
+      console.log("Event Response:", eventResponse.data);
 
-      // 임시 데이터
-      const response = {
-        data: {
-          year: 2023,
-          month: 9,
-          daily_totals: {
-            1: {
-              deposits: 0,
-              withdrawals: 135050,
-            },
-            2: {
-              deposits: 19350,
-              withdrawals: 18220,
-            },
-            3: {
-              deposits: 27540,
-              withdrawals: 105670,
-            },
-            4: {
-              deposits: 0,
-              withdrawals: 105140,
-            },
-            5: {
-              deposits: 27760,
-              withdrawals: 234740,
-            },
-            6: {
-              deposits: 25510,
-              withdrawals: 127350,
-            },
-            7: {
-              deposits: 0,
-              withdrawals: 70170,
-            },
-            8: {
-              deposits: 27010,
-              withdrawals: 87500,
-            },
-            9: {
-              deposits: 0,
-              withdrawals: 55190,
-            },
-            10: {
-              deposits: 0,
-              withdrawals: 141470,
-            },
-            11: {
-              deposits: 0,
-              withdrawals: 79000,
-            },
-            12: {
-              deposits: 0,
-              withdrawals: 186520,
-            },
-            13: {
-              deposits: 0,
-              withdrawals: 168260,
-            },
-            14: {
-              deposits: 0,
-              withdrawals: 85680,
-            },
-            15: {
-              deposits: 3500000,
-              withdrawals: 214140,
-            },
-            30: {
-              deposits: 0,
-              withdrawals: 178100,
-            },
-          },
-        },
-      };
-      const { year, month, daily_totals } = response.data;
+      const daily_totals = eventResponse.data.daily_totals;
+      console.log("Daily Totals:", daily_totals);
 
-      // daily_totals 데이터를 FullCalendar 이벤트 형식으로 변환
-      const newEvents = Object.keys(daily_totals)
-        .map((day) => {
-          const { deposits, withdrawals } = daily_totals[day];
-          const date = `${year}-${String(month).padStart(
-            2,
-            "0"
-          )}-${day.padStart(2, "0")}`; // 연도와 월을 동적으로 설정
+      if (!daily_totals) {
+        console.error("daily_totals가 undefined입니다");
+        return;
+      }
 
-          // 입금과 출금을 각각 다른 이벤트로 설정
-          const depositEvent =
-            deposits > 0
-              ? { title: `+${deposits}`, date, classNames: ["plus-event"] }
-              : null;
-          const withdrawalEvent =
-            withdrawals > 0
-              ? { title: `-${withdrawals}`, date, classNames: ["minus-event"] }
-              : null;
+      // daily_totals을 기반으로 newEvents 생성
+      const newEvents = Object.keys(daily_totals).flatMap((day) => {
+        const { deposits, withdrawals } = daily_totals[day];
+        const date = `${year}-${String(month).padStart(2, "0")}-${String(
+          day
+        ).padStart(2, "0")}`;
 
-          return [depositEvent, withdrawalEvent].filter(Boolean); // null 제거
-        })
-        .flat();
+        const events = [];
+        if (deposits > 0) {
+          events.push({
+            title: `+${deposits.toLocaleString()}원`,
+            date,
+            classNames: ["plus-event"],
+          });
+        }
+        if (withdrawals > 0) {
+          events.push({
+            title: `-${withdrawals.toLocaleString()}원`,
+            date,
+            classNames: ["minus-event"],
+          });
+        }
+        return events;
+      });
 
-      setEvents(newEvents); // 이벤트 설정
+      setEvents(newEvents);
+      console.log("Fetched events:", newEvents);
     } catch (error) {
       console.error("이벤트 데이터를 불러오는 중 오류가 발생했습니다.", error);
     }
   };
 
-  // 컴포넌트가 처음 렌더링될 때 이벤트 데이터를 받아옴
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  // 달 변경 시 호출되는 함수에서 연도와 월을 fetchData에 전달
+  const handleDatesSet = (dateInfo) => {
+    const currentStart = dateInfo.view.currentStart;
+    const year = currentStart.getFullYear();
+    const month = currentStart.getMonth() + 1;
+    setCurrentMonth(monthNames[month - 1]);
+
+    // 변경된 연도와 월로 fetchData 호출
+    fetchData(year, month);
+  };
 
   // 지출 항목 데이터
   const [expenses, setExpenses] = useState([
@@ -384,14 +326,6 @@ function CalendarPage() {
     (total, expense) => total + expense.amount,
     0
   );
-
-  // 달 변경 시 호출되는 함수
-  const handleDatesSet = (dateInfo) => {
-    const currentStart = dateInfo.view.currentStart;
-    const month = currentStart.getMonth() + 1;
-    setCurrentMonth(monthNames[month - 1]);
-    setEvents(initialEvents);
-  };
 
   // 이전 달로 이동
   const handlePrevMonth = () => {
@@ -423,6 +357,11 @@ function CalendarPage() {
           ref={calendarRef} // FullCalendar에 ref 연결
           plugins={[dayGridPlugin]}
           initialView="dayGridMonth"
+          headerToolbar={{
+            left: "prev",
+            center: "title",
+            right: "next",
+          }}
           dayCellClassNames={(arg) => {
             const dayOfWeek = arg.date.getDay();
             if (dayOfWeek === 6) return "saturday"; // 토요일
