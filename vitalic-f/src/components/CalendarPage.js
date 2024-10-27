@@ -223,9 +223,15 @@ function CalendarPage() {
   // fetchData 함수 수정
   const fetchData = async (year, month) => {
     try {
-      const eventResponse = await axios.get(
-        `http://localhost:3003/api/report?year=${year}&month=${month}`
+      // POST 요청으로 데이터를 body에 담아 전송
+      const eventResponse = await axios.post(
+        "http://127.0.0.1:8000/api/report/calendar",
+        {
+          year: year,
+          month: month,
+        }
       );
+
       console.log("Event Response:", eventResponse.data);
 
       const daily_totals = eventResponse.data.daily_totals;
@@ -300,7 +306,7 @@ function CalendarPage() {
 
       setTransactionList(groupedTransactions);
     } catch (error) {
-      console.error("이벤트 데이터를 불러오는 중 오류가 발생했습니다.", error);
+      console.error("데이터를 가져오는 중 오류가 발생했습니다:", error);
     }
   };
 
