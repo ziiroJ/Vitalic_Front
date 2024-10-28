@@ -330,9 +330,9 @@ function UserPage({ setGoal }) {
 					userEmail,
 					username,
 					userPH,
-					userBudgetMonth,
-					userBudgetDay,
-					userBudgetWeek,
+					userBudgetMonth: userBudgetMonth || 0, // null일 경우 0으로 설정
+					userBudgetDay: userBudgetDay || 0, // null일 경우 0으로 설정
+					userBudgetWeek: userBudgetWeek || 0, // null일 경우 0으로 설정
 				});
 			} catch (error) {
 				console.error(
