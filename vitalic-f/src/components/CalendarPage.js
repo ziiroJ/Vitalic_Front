@@ -21,7 +21,6 @@ const TopNav = styled.h1`
   justify-content: flex-end;
   button {
     color: #fff;
-    font-family: "Hanken Grotesk", sans-serif;
     border: none;
     background-color: transparent;
   }
@@ -38,7 +37,6 @@ const TopNav = styled.h1`
 `;
 
 const Logo = styled.p`
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   color: #f3a338;
   font-size: 5rem;
@@ -54,7 +52,6 @@ const Logo = styled.p`
 `;
 
 const Section = styled.div`
-  font-family: "Hanken Grotesk", sans-serif;
   background-color: #373737;
   width: 100%;
   min-height: ${(props) => props.mHeight || "250px"};
@@ -81,7 +78,6 @@ const Section = styled.div`
 const SectionTitle = styled.p`
   color: #fff;
   font-size: 1.5rem;
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   margin: 0 0 15px 0;
 
