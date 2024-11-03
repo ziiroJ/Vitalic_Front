@@ -166,7 +166,7 @@ const SubmitButton = styled.button`
   }
 `;
 
-// 로그인 페이지로 이동 안내
+// 로그인 페이지 이동 안내
 const Guide = styled.span`
   font-size: 12px;
   text-align: center;

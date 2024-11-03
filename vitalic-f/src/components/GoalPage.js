@@ -101,7 +101,7 @@ const EditButton = styled.button`
   }
 `;
 
-// 진행률 바 스타일
+// 진행률 바
 const ProgressBarContainer = styled.div`
   background-color: #fff;
   border-radius: 10px;

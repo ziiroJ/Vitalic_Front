@@ -510,8 +510,6 @@ const HomePage = () => {
     }
   };
 
-  ///
-
   // const fetchSummaryData = async () => {
   //   setLoading(true);
   //   try {

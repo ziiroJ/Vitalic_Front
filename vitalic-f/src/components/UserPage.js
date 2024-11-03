@@ -205,7 +205,7 @@ const SubmitButton = styled.button`
 `;
 
 // function UserPage({ setGoal }) {
-//   // 더미 사용자 데이터
+//   //더미 사용자 데이터
 //   const userInfo = {
 //     name: "홍길동",
 //     email: "user@example.com",

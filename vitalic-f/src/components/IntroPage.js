@@ -45,7 +45,7 @@ const ChartText = styled.div`
   text-align: center;
   white-space: nowrap;
   padding: 0 10px;
-  z-index: 1; /* 이미지 위에 글씨가 나타나도록 설정 */
+  z-index: 1; /* 이미지 위 글씨가 나타나도록 설정 */
   b {
     color: #f3a338;
   }
