@@ -37,7 +37,6 @@ const TopNav = styled.h1`
   justify-content: flex-end;
   button {
     color: #fff;
-    font-family: "Hanken Grotesk", sans-serif;
     border: none;
     background-color: transparent;
   }
@@ -56,7 +55,6 @@ const TopNav = styled.h1`
 `;
 
 const Logo = styled.p`
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   color: #f3a338;
   font-size: 5rem;
@@ -74,7 +72,6 @@ const Logo = styled.p`
 `;
 
 const Section = styled.div`
-  font-family: "Hanken Grotesk", sans-serif;
   background-color: #373737;
   width: 100%;
   min-height: ${(props) => props.mHeight || "250px"};
@@ -101,7 +98,6 @@ const Section = styled.div`
 const SectionTitle = styled.p`
   color: #fff;
   font-size: 1.5rem;
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   margin: 0 0 15px 0;
 
@@ -125,6 +121,35 @@ const Expense = styled.p`
 
   @media (max-width: 480px) {
     font-size: 1.5rem;
+  }
+`;
+const SendEmailButton = styled.button`
+  position: relative;
+  width: 100%;
+  padding: 12px;
+  background-color: #444; // 버튼의 기본 배경색
+  border: none;
+  color: white;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-bottom: 100px;
+  font-family: "Hahmlet", serif;
+  letter-spacing: 1.5px;
+  overflow: hidden;
+  transition: 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+
+  &:hover {
+    color: white;
+    background: transparent; // hover 시 배경색
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: 100px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 80px;
   }
 `;
 
@@ -169,15 +194,10 @@ const getChartData = (topCategories, withdrawTotal) => {
   const backgroundColors = labels.map((label, index) =>
     index < topCategories.length
       ? `hsla(36, 100%, ${
-          100 - (topCategories[index].amount / withdrawTotal) * 50
+          100 - (topCategories[index].amount / withdrawTotal) * 150
         }%, 1)`
       : "#999"
   );
-
-  // // 기타 항목은 회색으로 설정
-  // if (otherTotal > 0) {
-  //   backgroundColors.push("#999");
-  // }
 
   return {
     labels: labels,
@@ -219,6 +239,7 @@ const ExpenseChart = ({ topCategories, withdrawTotal }) => {
         options={{
           responsive: true,
           maintainAspectRatio: true,
+
           plugins: {
             legend: {
               position: "top",
@@ -226,8 +247,11 @@ const ExpenseChart = ({ topCategories, withdrawTotal }) => {
                 usePointStyle: true,
                 padding: 15,
                 font: {
+                  family: "Hahmlet",
                   size: 16,
+                  weight: "400",
                 },
+                color: "#fff",
               },
             },
             tooltip: {
@@ -239,12 +263,17 @@ const ExpenseChart = ({ topCategories, withdrawTotal }) => {
                 },
               },
               titleFont: {
+                color: "#fff",
+                family: "Hahmlet",
                 size: 17,
                 weight: "bold",
               },
               bodyFont: {
+                color: "#fff",
+                family: "Hahmlet",
                 size: 15,
               },
+              family: "Hahmlet",
               padding: 10,
               backgroundColor: "rgba(0, 0, 0, 0.8)",
               titleColor: "#fff",
@@ -268,7 +297,7 @@ const ExpenseList = styled.div`
   justify-content: space-between;
   padding: 0 0 20px 0px;
   font-size: 1.25rem;
-  font-weight: bold;
+  font-weight: 500;
   flex-direction: row;
   align-items: center;
   box-sizing: border-box;
@@ -287,10 +316,49 @@ const ExpenseList = styled.div`
 const ExpenseAmountWrap = styled.div`
   display: flex;
   align-items: center;
-  font-weight: 200;
+  font-weight: 500;
 `;
 const ExpenseAmount = styled.div`
   margin-right: 20px;
+`;
+const DetailDot = styled.div`
+  width: 5px; /* 아이콘과 동일한 너비 */
+  height: 5px; /* 아이콘과 동일한 높이 */
+  background-color: #aaa; /* 원하는 색상으로 설정 */
+  border-radius: 50%;
+  margin: 0px 15px 0 60px;
+  display: inline-flex; /* 아이콘과 같은 방식으로 정렬 */
+  align-items: center; /* 수직 중앙 정렬 */
+  justify-content: center; /* 수평 중앙 정렬 */
+
+  @media (max-width: 768px) {
+    margin: 0px 15px 0 50px;
+  }
+
+  @media (max-width: 480px) {
+    margin: 0px 15px 0 40px;
+  }
+`;
+
+const ExpenseDetailAmountWrap = styled.div`
+  display: flex;
+  align-items: center; /* 도트와 텍스트 정렬 */
+  font-weight: 500;
+  font-size: 1.25rem; /* 상위 항목과 동일한 크기 */
+  padding: 0 0 20px 0; /* 일관된 패딩 유지 */
+  color: #fff;
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+  }
+`;
+
+const ExpenseDetailAmount = styled.div`
+  margin-right: 20px;
+  color: #fff;
 `;
 
 const Dot = styled.span`
@@ -316,8 +384,8 @@ const PatternAmountDate = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-size: 0.8rem;
-  color: #666;
+  font-size: 0rem;
+  color: #bbb;
 `;
 
 const ExpenseListIcon = styled(FontAwesomeIcon)`
@@ -340,13 +408,28 @@ const ExpenseListIcon = styled(FontAwesomeIcon)`
   @media (max-width: 480px) {
     width: 30px;
     height: 30px;
-    margin-right: 5px;
+    margin-right: 10px;
   }
 
   svg {
     width: 50%;
     height: 50%;
   }
+`;
+
+// 모달 스타일
+const Modal = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  display: ${(props) => (props.show ? "block" : "none")};
+  opacity: ${(props) => (props.fadeOut ? 0 : 1)};
+  transition: opacity 1s ease;
 `;
 
 const HomePage = () => {
@@ -358,7 +441,9 @@ const HomePage = () => {
   const [summaryData, setSummaryData] = useState(null);
   const [patterns, setPatterns] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [showOtherExpenses, setShowOtherExpenses] = useState(false); // '그 외' 항목의 세부 내역 표시 상태
+  const [showModal, setShowModal] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
   // 원하는 형식으로 날짜를 설정합니다.
   const formattedDate = `${currentMonth.getMonth() + 1}월`;
 
@@ -376,31 +461,82 @@ const HomePage = () => {
     );
   };
 
+  ///
+  // fetchSummaryData 함수
   const fetchSummaryData = async () => {
     setLoading(true);
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/report/mwd");
-      setSummaryData(response.data.monthly_summary);
+      const dummySummaryData = {
+        deposit_total: 500000,
+        withdraw_total: 350000,
+        top_categories: [
+          { out_type: "편의점", amount: 50000 },
+          { out_type: "카페", amount: 30000 },
+          { out_type: "웹쇼핑", amount: 70000 },
+        ],
+        other_categories: [
+          { out_type: "편의점", amount: 50000 },
+          { out_type: "카페", amount: 30000 },
+          { out_type: "웹쇼핑", amount: 70000 },
+          { out_type: "식당", amount: 20000 },
+          { out_type: "엔터테인먼트(영화, 게임)", amount: 15000 },
+          { out_type: "기타", amount: 5000 },
+        ], // 추가된 전체 카테고리
+      };
+      setSummaryData(dummySummaryData);
     } catch (error) {
       console.error("월별 지출 데이터 가져오는 중 오류 발생:", error);
     } finally {
       setLoading(false);
     }
   };
-
+  // fetchPatterns 함수
   const fetchPatterns = async () => {
     setLoading(true);
     try {
-      const res = await axios.post("http://127.0.0.1:8000/api/report/fixed");
-      const data = Array.isArray(res.data.monthly) ? res.data.monthly : [];
-      console.log("Fetched Data:", data); // 데이터 확인용
-      setPatterns(data);
+      // API 대신 더미 데이터 사용
+      const dummyPatterns = [
+        { source: "넷플릭스", amount: 12000, date: "15일" },
+        { source: "헬스장", amount: 50000, date: "25일" },
+        { source: "핸드폰 요금", amount: 45000, date: "10일" },
+        { source: "핸드폰 요금", amount: 45000, date: "10일" },
+        { source: "핸드폰 요금", amount: 45000, date: "10일" },
+      ];
+      setPatterns(dummyPatterns);
     } catch (error) {
       console.error("패턴화된 지출 데이터를 가져오는 중 오류 발생:", error);
     } finally {
-      setLoading(false);
+      setLoading(false); // loading 상태를 false로 설정
     }
   };
+
+  ///
+
+  // const fetchSummaryData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await axios.post("http://127.0.0.1:8000/api/report/mwd");
+  //     setSummaryData(response.data.monthly_summary);
+  //   } catch (error) {
+  //     console.error("월별 지출 데이터 가져오는 중 오류 발생:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // const fetchPatterns = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await axios.post("http://127.0.0.1:8000/api/report/fixed");
+  //     const data = Array.isArray(res.data.monthly) ? res.data.monthly : [];
+  //     console.log("Fetched Data:", data); // 데이터 확인용
+  //     setPatterns(data);
+  //   } catch (error) {
+  //     console.error("패턴화된 지출 데이터를 가져오는 중 오류 발생:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
     fetchSummaryData();
@@ -411,7 +547,8 @@ const HomePage = () => {
   if (loading) return <div>로딩 중...</div>;
   if (!summaryData) return <div>데이터가 없습니다.</div>;
 
-  const { deposit_total, withdraw_total, top_categories } = summaryData;
+  const { deposit_total, withdraw_total, top_categories, other_categories } =
+    summaryData;
 
   const otherAmount =
     withdraw_total - top_categories.reduce((sum, cat) => sum + cat.amount, 0);
@@ -422,8 +559,26 @@ const HomePage = () => {
     (total, pattern) => total + pattern.amount,
     0
   );
-
+  // '그 외' 항목을 클릭했을 때의 핸들러
+  const handleShowOtherExpenses = () => {
+    setShowOtherExpenses(!showOtherExpenses);
+  };
   console.log("총 토탈금액: " + totalPatterns);
+
+  const handleSendEmail = () => {
+    // 이메일 전송 로직 추가 (Axios 등을 사용하여 전송)
+
+    setShowModal(true);
+    setFadeOut(false);
+
+    // 1초 후 모달 사라지기
+    setTimeout(() => {
+      setFadeOut(true);
+      setTimeout(() => {
+        setShowModal(false);
+      }, 500); // fadeOut 애니메이션 후 모달 숨기기
+    }, 2000); // 2초 후 모달 사라지기
+  };
 
   return (
     <Container>
@@ -470,12 +625,37 @@ const HomePage = () => {
               </ExpenseList>
             ))}
             {otherAmount > 0 && (
-              <ExpenseList>
+              <ExpenseList
+                onClick={handleShowOtherExpenses}
+                style={{ cursor: "pointer" }}
+              >
                 <ExpenseAmountWrap>
                   <ExpenseListIcon icon={categories["기타"]} />그 외
                 </ExpenseAmountWrap>
                 <ExpenseAmount>{otherAmount.toLocaleString()}원</ExpenseAmount>
               </ExpenseList>
+            )}
+            {showOtherExpenses && (
+              <div>
+                {other_categories
+                  .filter(
+                    (cat) =>
+                      !top_categories.some(
+                        (top) => top.out_type === cat.out_type
+                      )
+                  )
+                  .map((category, index) => (
+                    <ExpenseList key={index}>
+                      <ExpenseDetailAmountWrap>
+                        <DetailDot />
+                        {category.out_type}
+                      </ExpenseDetailAmountWrap>
+                      <ExpenseDetailAmount>
+                        {category.amount.toLocaleString()}원
+                      </ExpenseDetailAmount>
+                    </ExpenseList>
+                  ))}
+              </div>
             )}
           </ExpenseListWrap>
         </ExpenseDiv>
@@ -522,6 +702,12 @@ const HomePage = () => {
           )}
         </ExpenseDiv>
       </Section>
+      <SendEmailButton onClick={handleSendEmail}>
+        내 금융 차트 이메일로 보내기
+      </SendEmailButton>
+      <Modal show={showModal} fadeOut={fadeOut}>
+        내 이메일로 전송이 완료되었습니다.
+      </Modal>
     </Container>
   );
 };

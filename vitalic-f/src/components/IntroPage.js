@@ -60,7 +60,6 @@ const ChartText = styled.div`
 `;
 
 const TopSection = styled.p`
-  font-family: "Hanken Grotesk", sans-serif;
   color: #fff;
   font-size: 2rem;
   margin: 80px 20px 70px 20px;
@@ -91,7 +90,7 @@ const ButtonSection = styled.div`
   justify-content: space-between;
   gap: 10px;
   button {
-    font-family: "Hanken Grotesk", sans-serif;
+    font-family: "Hahmlet", serif;
     background-color: #f4bd6f;
     border: none;
     border-radius: 20px 40px 20px 20px;

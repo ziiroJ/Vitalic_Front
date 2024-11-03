@@ -19,7 +19,6 @@ const TopNav = styled.h1`
   justify-content: flex-end;
   button {
     color: #fff;
-    font-family: "Hanken Grotesk", sans-serif;
     border: none;
     background-color: transparent;
   }
@@ -38,7 +37,6 @@ const TopNav = styled.h1`
 `;
 
 const Logo = styled.p`
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   color: #f3a338;
   font-size: 5rem;
@@ -56,7 +54,6 @@ const Logo = styled.p`
 `;
 
 const Section = styled.div`
-  font-family: "Hanken Grotesk", sans-serif;
   background-color: #373737;
   width: 100%;
   min-height: 100px;
@@ -82,7 +79,6 @@ const SectionTop = styled.div`
 const SectionTitle = styled.p`
   color: #fff;
   font-size: 1.5rem;
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   margin: 0;
 `;
@@ -117,7 +113,7 @@ const ProgressBarContainer = styled.div`
 
 const ProgressBar = styled.div`
   height: 100%;
-  background-color: #ff8c00;
+  background-color: #f4bd6f;
   width: ${({ width }) => width || "0%"};
 `;
 
@@ -126,14 +122,13 @@ const GoalWrapper = styled.div`
 `;
 
 const GoalLabel = styled.div`
-  font-family: "Hanken Grotesk", sans-serif;
   color: #fff;
   margin-bottom: 20px;
   font-weight: bold;
 `;
 
 const ExceededAmount = styled.span`
-  color: #c90000; // 초과 금액
+  color: #ff8c00; // 초과 금액
   margin-left: 10px;
   font-weight: bold;
 `;
@@ -163,7 +158,6 @@ const ModalContent = styled.div`
 const SectionTitleS = styled.p`
   color: #fff;
   font-size: 1.5rem;
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   margin-bottom: 10px;
   display: flex;
