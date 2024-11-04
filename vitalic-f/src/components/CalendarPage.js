@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleUser } from "@fortawesome/free-solid-svg-icons";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -21,7 +22,6 @@ const TopNav = styled.h1`
   justify-content: flex-end;
   button {
     color: #fff;
-    font-family: "Hanken Grotesk", sans-serif;
     border: none;
     background-color: transparent;
   }
@@ -38,7 +38,6 @@ const TopNav = styled.h1`
 `;
 
 const Logo = styled.p`
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   color: #f3a338;
   font-size: 5rem;
@@ -54,7 +53,8 @@ const Logo = styled.p`
 `;
 
 const Section = styled.div`
-  font-family: "Hanken Grotesk", sans-serif;
+  font-family: "Hahmlet", serif;
+
   background-color: #373737;
   width: 100%;
   min-height: ${(props) => props.mHeight || "250px"};
@@ -81,7 +81,6 @@ const Section = styled.div`
 const SectionTitle = styled.p`
   color: #fff;
   font-size: 1.5rem;
-  font-family: "Hanken Grotesk", sans-serif;
   font-weight: bold;
   margin: 0 0 15px 0;
 
@@ -165,30 +164,51 @@ const ExpenseList = styled.div`
   padding: 0 0 20px 0px;
   font-size: 1.25rem;
   font-weight: bold;
+`;
+const TransactionList = styled.ul`
+  list-style-type: none; /* 기본 리스트 스타일 제거 */
+  padding: 0; /* 패딩 제거 */
+  margin: 0; /* 마진 제거 */
+`;
+
+const TransactionItem = styled.li`
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  box-sizing: border-box;
-  white-space: nowrap;
-  overflow: hidden;
   @media (max-width: 768px) {
     font-size: 1rem;
   }
   @media (max-width: 480px) {
     font-size: 0.85rem;
   }
+
+  justify-content: space-between; /* 왼쪽과 오른쪽 정렬 */
+  align-items: center; /* 수직 정렬 */
+  margin-bottom: 10px; /* 아이템 간격 */
 `;
 
 const Dot = styled.span`
-  width: 8px;
+  width: 8px; /* 도트의 너비 */
   height: 8px; /* 도트의 높이 */
-  border-radius: 50%; /* 원형으로 만들기 */
-  display: inline-block; /* 인라인 블록으로 표시 */
-  margin-right: 8px; /* 텍스트와의 간격 */
-  background-color: ${(props) =>
-    props.isMinus ? "#e74c3c" : "#2ecc71"}; /* 출금과 입금에 따라 색상 설정 */
+  border-radius: 50%; /* 둥근 형태 */
+  display: inline-block; /* 블록 형태 */
+  margin-right: 8px; /* 도트와 텍스트 간격 */
+  background-color: #fff; /* 조건에 따른 색상 */
 `;
 
+const TransactionText = styled.div`
+  display: flex;
+  align-items: center; /* 수직 정렬 */
+  font-weight: 600;
+  letter-spacing: 2px;
+`;
+const TransactionTimeText = styled.div`
+  color: #aaa;
+  font-size: 0.8rem;
+`;
+const TransactionAmountText = styled.div`
+  font-weight: 600;
+  color: ${(props) =>
+    props.type === "입금" ? "#17A1FA" : "#fff"}; /* 조건에 따른 색상 */
+`;
 function CalendarPage() {
   const navigate = useNavigate();
 
@@ -404,6 +424,10 @@ function CalendarPage() {
     }
   };
 
+  const [selectedDate, setSelectedDate] = useState(null); // 선택된 날짜 상태
+  const [selectedData, setSelectedData] = useState(null);
+  const [transactions, setTransactions] = useState([]); // 해당 날짜의 거래 내역 상태
+  // 날짜 클릭 시 해당 날짜의 거래 내역 필터링하여 상태 업데이트
   // 달 변경 시 호출되는 함수에서 연도와 월을 fetchData에 전달
   const handleDatesSet = (dateInfo) => {
     const currentStart = dateInfo.view.currentStart;
@@ -412,10 +436,149 @@ function CalendarPage() {
     setCurrentMonth(monthNames[month - 1]);
     setCurrentYear(year);
 
-    // 변경된 연도와 월로 fetchData 호출
     fetchData(year, month);
   };
+  // const handleDateClick = async (arg) => {
+  //   const clickedDate = arg.dateStr;
+  //   setSelectedDate(clickedDate);
 
+  //   const mockData = {
+  //     date: clickedDate,
+  //     deposits_total: 61440,
+  //     withdrawals_total: 192980,
+  //     deposit_details: [
+  //       {
+  //         tran_amt: 10650,
+  //         in_des: "급여 이체",
+  //         tran_date_time: "2024-11-21 15:35",
+  //       },
+  //       {
+  //         tran_amt: 23100,
+  //         in_des: "알바 이체",
+  //         tran_date_time: "2024-11-21 18:03",
+  //       },
+  //       {
+  //         tran_amt: 27690,
+  //         in_des: "용돈 이체",
+  //         tran_date_time: "2024-11-21 12:53",
+  //       },
+  //     ],
+  //     withdraw_details: [
+  //       {
+  //         tran_amt: 8270,
+  //         in_des: "롯데리아",
+  //         tran_date_time: "2024-11-21 12:53",
+  //       },
+  //       {
+  //         tran_amt: 34770,
+  //         in_des: "인터파크",
+  //         tran_date_time: "2024-11-21 14:30",
+  //       },
+  //       {
+  //         tran_amt: 10500,
+  //         in_des: "편의점",
+  //         tran_date_time: "2024-11-21 11:45",
+  //       },
+  //     ],
+  //   };
+  //   try {
+  //     // 백엔드에서 해당 날짜의 거래 내역 가져오기
+  //     const response = await axios.get(
+  //       `/api/report/calendar?date=${clickedDate}`
+  //     );
+  //     const transactionData = response.data; // 응답 데이터
+
+  //     // 거래 내역을 상태에 업데이트
+  //     const combinedTransactions = [
+  //       ...transactionData.deposit_details.map((item) => ({
+  //         ...item,
+  //         type: "입금",
+  //       })),
+  //       ...transactionData.withdraw_details.map((item) => ({
+  //         ...item,
+  //         type: "출금",
+  //       })),
+  //     ];
+
+  //     combinedTransactions.sort(
+  //       (a, b) => new Date(a.tran_date_time) - new Date(b.tran_date_time)
+  //     );
+
+  //     setTransactions(combinedTransactions);
+  //   } catch (error) {
+  //     console.error("거래 내역을 가져오는 중 오류가 발생했습니다:", error);
+  //   }
+  // };
+
+  const handleDateClick = (arg) => {
+    const clickedDate = arg.dateStr;
+    setSelectedDate(clickedDate);
+
+    // 더미 데이터
+    const mockData = {
+      "2024-11-21": {
+        deposits: [
+          {
+            tran_amt: 10650,
+            in_des: "급여 이체",
+            tran_date_time: "2024-11-21 15:35",
+          },
+          {
+            tran_amt: 23100,
+            in_des: "알바 이체",
+            tran_date_time: "2024-11-21 18:03",
+          },
+        ],
+        withdrawals: [
+          {
+            tran_amt: 8270,
+            in_des: "롯데리아",
+            tran_date_time: "2024-11-21 12:53",
+          },
+          {
+            tran_amt: 34770,
+            in_des: "인터파크",
+            tran_date_time: "2024-11-21 14:30",
+          },
+          {
+            tran_amt: 34770,
+            in_des: "인터파크",
+            tran_date_time: "2024-11-21 16:30",
+          },
+          {
+            tran_amt: 34770,
+            in_des: "인터파크",
+            tran_date_time: "2024-11-21 20:30",
+          },
+        ],
+      },
+      // 다른 날짜에 대한 더미 데이터 추가 가능
+    };
+
+    const dataForDate = mockData[clickedDate];
+
+    if (dataForDate) {
+      const combinedTransactions = [
+        ...dataForDate.deposits.map((item) => ({ ...item, type: "입금" })),
+        ...dataForDate.withdrawals.map((item) => ({ ...item, type: "출금" })),
+      ];
+
+      combinedTransactions.sort(
+        (a, b) => new Date(a.tran_date_time) - new Date(b.tran_date_time)
+      );
+
+      setTransactions(combinedTransactions);
+    } else {
+      setTransactions([]); // 해당 날짜에 데이터가 없으면 빈 배열 설정
+    }
+  };
+
+  //   // 백엔드에서 해당 날짜의 거래 내역 가져오기
+  //   const response = await axios.get(
+  //     `/api/report/calendar?date=${clickedDate}`
+  //   );
+  //   setTransactions(response.data); // 거래 내역 업데이트
+  // };
   return (
     <Container>
       {/* 상단 내비게이션 */}
@@ -432,7 +595,7 @@ function CalendarPage() {
       <CalendarWrap>
         <FullCalendar
           ref={calendarRef} // FullCalendar에 ref 연결
-          plugins={[dayGridPlugin]}
+          plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           headerToolbar={{
             left: "prev",
@@ -448,30 +611,42 @@ function CalendarPage() {
           titleFormat={{ year: "numeric", month: "long" }} // 제목 포맷
           events={events} // 캘린더에 이벤트 설정
           datesSet={handleDatesSet} // 날짜 변경 시 이벤트 핸들러
+          dateClick={handleDateClick} // 날짜 클릭 핸들러 추가
         />
       </CalendarWrap>
 
       {/*월 지출 섹션 */}
       <Section>
-        <SectionTitle>
-          {currentYear} - {currentMonth} 거래 내역
-        </SectionTitle>
-        <ExpenseDiv>
-          <ExpenseListWrap>
-            {transactionList.map((entry, index) => (
-              <div key={index}>
-                <h3>{entry.date}</h3> {/* 날짜 출력 */}
-                {entry.transactions.map((item, itemIndex) => (
-                  <ExpenseList key={itemIndex}>
-                    <Dot isMinus={item.classNames.includes("minus-event")} />{" "}
-                    {/* 도트 */}
-                    {item.title}
-                  </ExpenseList>
+        {selectedDate && (
+          <div>
+            <SectionTitle>{selectedDate} 내역</SectionTitle>
+            {transactions.length > 0 ? (
+              <TransactionList>
+                {transactions.map((transaction, index) => (
+                  <TransactionItem key={index}>
+                    <TransactionText>
+                      <Dot />
+                      <span>
+                        {transaction.in_des}
+                        <TransactionTimeText>
+                          {transaction.tran_date_time}
+                        </TransactionTimeText>
+                      </span>
+                    </TransactionText>
+                    <TransactionAmountText type={transaction.type}>
+                      {transaction.type === "출금"
+                        ? `-${transaction.tran_amt}`
+                        : transaction.tran_amt}
+                      원
+                    </TransactionAmountText>
+                  </TransactionItem>
                 ))}
-              </div>
-            ))}
-          </ExpenseListWrap>
-        </ExpenseDiv>
+              </TransactionList>
+            ) : (
+              <p>거래 내역이 없습니다.</p>
+            )}
+          </div>
+        )}
       </Section>
     </Container>
   );
