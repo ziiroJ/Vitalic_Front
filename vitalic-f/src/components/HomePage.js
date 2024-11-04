@@ -438,7 +438,11 @@ const HomePage = () => {
   const [PatternShowMore, PatternSetShowMore] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [expenses, setExpenses] = useState([]);
-  const [summaryData, setSummaryData] = useState(null);
+  // const [summaryData, setSummaryData] = useState(null);
+  const [summaryData, setSummaryData] = useState({
+    monthly_top3_summary: {},
+    other_categories: [],
+  });
   const [patterns, setPatterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOtherExpenses, setShowOtherExpenses] = useState(false); // '그 외' 항목의 세부 내역 표시 상태
@@ -466,49 +470,35 @@ const HomePage = () => {
   const fetchSummaryData = async () => {
     setLoading(true);
     try {
-      const dummySummaryData = {
-        deposit_total: 500000,
-        withdraw_total: 350000,
-        top_categories: [
-          { out_type: "편의점", amount: 50000 },
-          { out_type: "카페", amount: 30000 },
-          { out_type: "웹쇼핑", amount: 70000 },
-        ],
-        other_categories: [
-          { out_type: "편의점", amount: 50000 },
-          { out_type: "카페", amount: 30000 },
-          { out_type: "웹쇼핑", amount: 70000 },
-          { out_type: "식당", amount: 20000 },
-          { out_type: "엔터테인먼트(영화, 게임)", amount: 15000 },
-          { out_type: "기타", amount: 5000 },
-        ], // 추가된 전체 카테고리
-      };
-      setSummaryData(dummySummaryData);
+      const response = await axios.get("http://localhost:3003/api/report");
+      setSummaryData(response.data);
     } catch (error) {
       console.error("월별 지출 데이터 가져오는 중 오류 발생:", error);
     } finally {
       setLoading(false);
     }
   };
-  // fetchPatterns 함수
+
   const fetchPatterns = async () => {
     setLoading(true);
     try {
-      // API 대신 더미 데이터 사용
-      const dummyPatterns = [
-        { source: "넷플릭스", amount: 12000, date: "15일" },
-        { source: "헬스장", amount: 50000, date: "25일" },
-        { source: "핸드폰 요금", amount: 45000, date: "10일" },
-        { source: "핸드폰 요금", amount: 45000, date: "10일" },
-        { source: "핸드폰 요금", amount: 45000, date: "10일" },
-      ];
-      setPatterns(dummyPatterns);
+      const response = await axios.get(
+        "http://localhost:3003/api/report/fixed"
+      );
+      const data = Array.isArray(response.data.monthly)
+        ? response.data.monthly
+        : [];
+      setPatterns(data);
     } catch (error) {
       console.error("패턴화된 지출 데이터를 가져오는 중 오류 발생:", error);
     } finally {
-      setLoading(false); // loading 상태를 false로 설정
+      setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchSummaryData(); // 컴포넌트가 마운트될 때 데이터 fetching
+    fetchPatterns(); // 컴포넌트가 마운트될 때 데이터 fetching
+  }, []);
 
   // const fetchSummaryData = async () => {
   //   setLoading(true);
@@ -536,23 +526,24 @@ const HomePage = () => {
   //   }
   // };
 
-  useEffect(() => {
-    fetchSummaryData();
-    // 컴포넌트가 마운트될 때 데이터 fetching
-    fetchPatterns(); // 컴포넌트가 마운트될 때 데이터 fetching
-  }, []);
+  // useEffect(() => {
+  //   fetchSummaryData();
+  //   // 컴포넌트가 마운트될 때 데이터 fetching
+  //   fetchPatterns(); // 컴포넌트가 마운트될 때 데이터 fetching
+  // }, []);
 
   if (loading) return <div>로딩 중...</div>;
-  if (!summaryData) return <div>데이터가 없습니다.</div>;
+  if (!summaryData || !summaryData.monthly_top3_summary) {
+    return <div>데이터가 없습니다.</div>;
+  }
 
   const { deposit_total, withdraw_total, top_categories, other_categories } =
-    summaryData;
-
+    summaryData.monthly_top3_summary;
+  // 안전하게 top_categories에 접근하여 합계를 계산
   const otherAmount =
-    withdraw_total - top_categories.reduce((sum, cat) => sum + cat.amount, 0);
-  // 패턴화된 지출 데이터 fetching
+    withdraw_total -
+    (top_categories?.reduce((sum, cat) => sum + cat.amount, 0) || 0);
 
-  // 총 패턴화된 금액 계산
   const totalPatterns = patterns.reduce(
     (total, pattern) => total + pattern.amount,
     0
