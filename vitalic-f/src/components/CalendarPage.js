@@ -235,9 +235,10 @@ function CalendarPage() {
     "12월",
   ];
 
-  // 이벤트와 지출 데이터를 백엔드 API에서 받아오는 함수
+  // 이벤트와 거래 데이터를 백엔드 API에서 받아오는 함수
   useEffect(() => {
-    fetchData();
+    const today = new Date();
+    fetchData(today.getFullYear(), today.getMonth() + 1, today.getDate()); // 현재 날짜로 초기화
   }, []);
 
   // fetchData 함수 수정
@@ -338,79 +339,75 @@ function CalendarPage() {
   // 	}
   // };
   // fetchData 함수 수정
-  const fetchData = async (year, month) => {
+  const fetchData = async (year, month, day) => {
     try {
-      // POST 요청으로 데이터를 body에 담아 전송
-      const eventResponse = await axios.post(
-        "http://127.0.0.1:8000/api/report/calendar/all",
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/report/calendar",
         {
           year: year,
           month: month,
+          day: day,
         }
       );
 
-      console.log("Event Response:", eventResponse.data);
+      console.log("Event Response:", response.data);
 
-      const dailyTotals = eventResponse.data;
+      const {
+        deposits_total,
+        withdrawals_total,
+        deposit_details,
+        withdraw_details,
+      } = response.data;
 
-      if (!dailyTotals) {
-        console.error("dailyTotals가 undefined입니다");
-        return;
-      }
-
-      // dailyTotals을 기반으로 newEvents 생성
-      const newEvents = dailyTotals.flatMap(({ day, deposit, withdraw }) => {
-        const date = `${year}-${String(month).padStart(2, "0")}-${String(
-          day
-        ).padStart(2, "0")}`;
-
-        const events = [];
-        if (deposit > 0) {
-          events.push({
-            title: `+${deposit.toLocaleString()}원`,
-            date,
-            classNames: ["plus-event"],
-          });
-        }
-        if (withdraw > 0) {
-          events.push({
-            title: `-${withdraw.toLocaleString()}원`,
-            date,
-            classNames: ["minus-event"],
-          });
-        }
-        return events;
-      });
-
+      // 입금 및 출금 이벤트를 생성
+      const newEvents = [
+        {
+          title: `${deposits_total.toLocaleString()}원`,
+          date: `${year}-${month.toString().padStart(2, "0")}-${day
+            .toString()
+            .padStart(2, "0")}`, // 날짜 포맷팅
+          classNames: ["plus-event"],
+        },
+        {
+          title: `-${withdrawals_total.toLocaleString()}원`,
+          date: `${year}-${month.toString().padStart(2, "0")}-${day
+            .toString()
+            .padStart(2, "0")}`, // 날짜 포맷팅
+          classNames: ["minus-event"],
+        },
+      ];
       setEvents(newEvents);
       console.log("Fetched events:", newEvents);
 
-      // 거래 내역 생성
+      // 거래 내역 상태 업데이트
       const transactionMap = {};
-      dailyTotals.forEach(({ day, deposit, withdraw }) => {
-        const date = `${year}-${String(month).padStart(2, "0")}-${String(
-          day
-        ).padStart(2, "0")}`;
 
+      deposit_details.forEach(({ tran_amt, in_des, tran_date_time }) => {
+        const date = tran_date_time.split(" ")[0];
         if (!transactionMap[date]) {
           transactionMap[date] = [];
         }
-
-        if (deposit > 0) {
-          transactionMap[date].push({
-            title: `+${deposit.toLocaleString()}원 (입금)`,
-            classNames: ["plus-event"],
-          });
-        }
-        if (withdraw > 0) {
-          transactionMap[date].push({
-            title: `-${withdraw.toLocaleString()}원 (출금)`,
-            classNames: ["minus-event"],
-          });
-        }
+        transactionMap[date].push({
+          tran_amt,
+          in_des,
+          tran_date_time,
+          type: "입금",
+        });
       });
 
-      // 거래 내역 상태 업데이트
+      withdraw_details.forEach(({ tran_amt, in_des, tran_date_time }) => {
+        const date = tran_date_time.split(" ")[0];
+        if (!transactionMap[date]) {
+          transactionMap[date] = [];
+        }
+        transactionMap[date].push({
+          tran_amt,
+          in_des,
+          tran_date_time,
+          type: "출금",
+        });
+      });
+
       const groupedTransactions = Object.entries(transactionMap).map(
         ([date, transactions]) => ({
           date,
@@ -427,147 +424,26 @@ function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(null); // 선택된 날짜 상태
   const [selectedData, setSelectedData] = useState(null);
   const [transactions, setTransactions] = useState([]); // 해당 날짜의 거래 내역 상태
-  // 날짜 클릭 시 해당 날짜의 거래 내역 필터링하여 상태 업데이트
-  // 달 변경 시 호출되는 함수에서 연도와 월을 fetchData에 전달
-  const handleDatesSet = (dateInfo) => {
-    const currentStart = dateInfo.view.currentStart;
+
+  const handleDatesSet = (arg) => {
+    const currentStart = arg.view.currentStart;
     const year = currentStart.getFullYear();
     const month = currentStart.getMonth() + 1;
     setCurrentMonth(monthNames[month - 1]);
     setCurrentYear(year);
 
-    fetchData(year, month);
+    fetchData(year, month); // 날짜 변경 시 데이터 요청
   };
-  // const handleDateClick = async (arg) => {
-  //   const clickedDate = arg.dateStr;
-  //   setSelectedDate(clickedDate);
-
-  //   const mockData = {
-  //     date: clickedDate,
-  //     deposits_total: 61440,
-  //     withdrawals_total: 192980,
-  //     deposit_details: [
-  //       {
-  //         tran_amt: 10650,
-  //         in_des: "급여 이체",
-  //         tran_date_time: "2024-11-21 15:35",
-  //       },
-  //       {
-  //         tran_amt: 23100,
-  //         in_des: "알바 이체",
-  //         tran_date_time: "2024-11-21 18:03",
-  //       },
-  //       {
-  //         tran_amt: 27690,
-  //         in_des: "용돈 이체",
-  //         tran_date_time: "2024-11-21 12:53",
-  //       },
-  //     ],
-  //     withdraw_details: [
-  //       {
-  //         tran_amt: 8270,
-  //         in_des: "롯데리아",
-  //         tran_date_time: "2024-11-21 12:53",
-  //       },
-  //       {
-  //         tran_amt: 34770,
-  //         in_des: "인터파크",
-  //         tran_date_time: "2024-11-21 14:30",
-  //       },
-  //       {
-  //         tran_amt: 10500,
-  //         in_des: "편의점",
-  //         tran_date_time: "2024-11-21 11:45",
-  //       },
-  //     ],
-  //   };
-  //   try {
-  //     // 백엔드에서 해당 날짜의 거래 내역 가져오기
-  //     const response = await axios.get(
-  //       `/api/report/calendar?date=${clickedDate}`
-  //     );
-  //     const transactionData = response.data; // 응답 데이터
-
-  //     // 거래 내역을 상태에 업데이트
-  //     const combinedTransactions = [
-  //       ...transactionData.deposit_details.map((item) => ({
-  //         ...item,
-  //         type: "입금",
-  //       })),
-  //       ...transactionData.withdraw_details.map((item) => ({
-  //         ...item,
-  //         type: "출금",
-  //       })),
-  //     ];
-
-  //     combinedTransactions.sort(
-  //       (a, b) => new Date(a.tran_date_time) - new Date(b.tran_date_time)
-  //     );
-
-  //     setTransactions(combinedTransactions);
-  //   } catch (error) {
-  //     console.error("거래 내역을 가져오는 중 오류가 발생했습니다:", error);
-  //   }
-  // };
-
   const handleDateClick = (arg) => {
     const clickedDate = arg.dateStr;
     setSelectedDate(clickedDate);
+    console.log(`날짜 클릭: ${arg.dateStr}`);
+    const dateTransactions = transactionList.find(
+      (item) => item.date === clickedDate
+    );
 
-    // 더미 데이터
-    const mockData = {
-      "2024-11-21": {
-        deposits: [
-          {
-            tran_amt: 10650,
-            in_des: "급여 이체",
-            tran_date_time: "2024-11-21 15:35",
-          },
-          {
-            tran_amt: 23100,
-            in_des: "알바 이체",
-            tran_date_time: "2024-11-21 18:03",
-          },
-        ],
-        withdrawals: [
-          {
-            tran_amt: 8270,
-            in_des: "롯데리아",
-            tran_date_time: "2024-11-21 12:53",
-          },
-          {
-            tran_amt: 34770,
-            in_des: "인터파크",
-            tran_date_time: "2024-11-21 14:30",
-          },
-          {
-            tran_amt: 34770,
-            in_des: "인터파크",
-            tran_date_time: "2024-11-21 16:30",
-          },
-          {
-            tran_amt: 34770,
-            in_des: "인터파크",
-            tran_date_time: "2024-11-21 20:30",
-          },
-        ],
-      },
-      // 다른 날짜에 대한 더미 데이터 추가 가능
-    };
-
-    const dataForDate = mockData[clickedDate];
-
-    if (dataForDate) {
-      const combinedTransactions = [
-        ...dataForDate.deposits.map((item) => ({ ...item, type: "입금" })),
-        ...dataForDate.withdrawals.map((item) => ({ ...item, type: "출금" })),
-      ];
-
-      combinedTransactions.sort(
-        (a, b) => new Date(a.tran_date_time) - new Date(b.tran_date_time)
-      );
-
-      setTransactions(combinedTransactions);
+    if (dateTransactions) {
+      setTransactions(dateTransactions.transactions);
     } else {
       setTransactions([]); // 해당 날짜에 데이터가 없으면 빈 배열 설정
     }
