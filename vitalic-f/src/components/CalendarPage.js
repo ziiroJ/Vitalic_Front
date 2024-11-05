@@ -246,33 +246,6 @@ function CalendarPage() {
 				return;
 			}
 
-			// daily_totals을 기반으로 newEvents 생성
-			// const newEvents = Object.keys(dailyData).flatMap(
-			//    (day) => {
-			//       const { deposits, withdrawals } = dailyData[day];
-			//       const date = `${year}-${String(month).padStart(
-			//          2,
-			//          "0"
-			//       )}-${String(day).padStart(2, "0")}`;
-
-			//       const events = [];
-			//       if (deposits > 0) {
-			//          events.push({
-			//             title: `+${deposits.toLocaleString()}원`,
-			//             date,
-			//             classNames: ["plus-event"],
-			//          });
-			//       }
-			//       if (withdrawals > 0) {
-			//          events.push({
-			//             title: `-${withdrawals.toLocaleString()}원`,
-			//             date,
-			//             classNames: ["minus-event"],
-			//          });
-			//       }
-			//       return events;
-			//    }
-			// );
 			// 이벤트 생성
 			const newEvents = dailyData.flatMap(
 				({ day, deposit, withdraw }) => {
