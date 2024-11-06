@@ -5,6 +5,7 @@ import { faCircleUser } from "@fortawesome/free-solid-svg-icons";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import { useNavigate } from "react-router-dom";
+import interactionPlugin from "@fullcalendar/interaction";
 import axios from "axios";
 
 // Styled Components
@@ -190,18 +191,21 @@ const Dot = styled.span`
 			? "#e74c3c"
 			: "#2ecc71"}; /* 출금과 입금에 따라 색상 설정 */
 `;
-
 function CalendarPage() {
 	const navigate = useNavigate();
 
-	// 상태 관리
 	const [transactionList, setTransactionList] = useState(
 		[]
-	); // 거래 내역 상태 추가
+	);
 	const [currentMonth, setCurrentMonth] = useState("");
 	const [currentYear, setCurrentYear] = useState("");
 	const [events, setEvents] = useState([]);
-	const calendarRef = useRef(null); // FullCalendar 제어를 위한 ref 생성
+	const [
+		selectedDateTransactions,
+		setSelectedDateTransactions,
+	] = useState([]);
+	const [selectedDate, setSelectedDate] = useState("");
+	const calendarRef = useRef(null);
 
 	// 한국어 달 이름 배열
 	const monthNames = [
@@ -221,25 +225,20 @@ function CalendarPage() {
 
 	// 이벤트와 지출 데이터를 백엔드 API에서 받아오는 함수
 	useEffect(() => {
-		fetchData();
+		const today = new Date();
+		fetchData(today.getFullYear(), today.getMonth() + 1);
 	}, []);
 
 	// fetchData 함수 수정
 	const fetchData = async (year, month) => {
 		try {
-			// POST 요청으로 데이터를 body에 담아 전송
 			const eventResponse = await axios.post(
 				"http://127.0.0.1:8000/api/report/calendar/all",
-				{
-					year: year,
-					month: month,
-				}
+				{ year, month }
 			);
 
 			console.log("Event Response:", eventResponse.data);
-
 			const dailyData = eventResponse.data;
-			console.log("Daily Totals:", dailyData);
 
 			if (!dailyData) {
 				console.error("dailyData가 undefined입니다");
@@ -277,40 +276,31 @@ function CalendarPage() {
 			setEvents(newEvents);
 			console.log("Fetched events:", newEvents);
 
-			// 거래 내역 생성
-			const transactionMap = {};
-			Object.keys(dailyData).forEach((day) => {
-				const { deposits, withdrawals } = dailyData[day];
-				const date = `${year}-${String(month).padStart(
-					2,
-					"0"
-				)}-${String(day).padStart(2, "0")}`;
-
-				if (!transactionMap[date]) {
-					transactionMap[date] = [];
-				}
-
-				if (deposits > 0) {
-					transactionMap[date].push({
-						title: `+${deposits.toLocaleString()}원 (입금)`,
-						classNames: ["plus-event"],
-					});
-				}
-				if (withdrawals > 0) {
-					transactionMap[date].push({
-						title: `-${withdrawals.toLocaleString()}원 (출금)`,
-						classNames: ["minus-event"],
-					});
-				}
-			});
-
 			// 거래 내역 상태 업데이트
-			const groupedTransactions = Object.entries(
-				transactionMap
-			).map(([date, transactions]) => ({
-				date,
-				transactions,
-			}));
+			const groupedTransactions = dailyData.map(
+				({ day, deposits, withdrawals }) => {
+					const date = `${year}-${String(month).padStart(
+						2,
+						"0"
+					)}-${String(day).padStart(2, "0")}`;
+					const transactions = [];
+
+					if (deposits > 0) {
+						transactions.push({
+							title: `+${deposits.toLocaleString()}원 (입금)`,
+							classNames: ["plus-event"],
+						});
+					}
+					if (withdrawals > 0) {
+						transactions.push({
+							title: `-${withdrawals.toLocaleString()}원 (출금)`,
+							classNames: ["minus-event"],
+						});
+					}
+
+					return { date, transactions };
+				}
+			);
 
 			setTransactionList(groupedTransactions);
 		} catch (error) {
@@ -321,7 +311,7 @@ function CalendarPage() {
 		}
 	};
 
-	// 달 변경 시 호출되는 함수에서 연도와 월을 fetchData에 전달
+	// 달 변경 시 호출되는 함수
 	const handleDatesSet = (dateInfo) => {
 		const currentStart = dateInfo.view.currentStart;
 		const year = currentStart.getFullYear();
@@ -333,23 +323,58 @@ function CalendarPage() {
 		fetchData(year, month);
 	};
 
+	const handleDateSelect = async (date) => {
+		const selectedDateStr = date.startStr;
+		setSelectedDate(selectedDateStr);
+
+		const dateObj = new Date(selectedDateStr);
+		const payload = {
+			year: dateObj.getFullYear(),
+			month: dateObj.getMonth() + 1,
+			day: dateObj.getDate(),
+		};
+
+		try {
+			const response = await axios.post(
+				"http://127.0.0.1:8000/api/report/calendar",
+				payload
+			);
+			const data = response.data;
+
+			console.log("Response Data:", data);
+
+			const transactionDetails = [
+				...data.deposit_details,
+				...data.withdraw_details,
+			];
+			transactionDetails.sort(
+				(a, b) =>
+					new Date(a.tran_date_time) -
+					new Date(b.tran_date_time)
+			);
+
+			setSelectedDateTransactions(transactionDetails);
+		} catch (error) {
+			console.error(
+				"데이터를 가져오는 중 오류가 발생했습니다:",
+				error
+			);
+		}
+	};
+
 	return (
 		<Container>
-			{/* 상단 내비게이션 */}
 			<TopNav>
 				<button onClick={() => navigate("/user")}>
 					<FontAwesomeIcon icon={faCircleUser} size="3x" />
 				</button>
 			</TopNav>
 
-			{/* 로고 */}
 			<Logo>Vitalic</Logo>
 
-			{/* 캘린더 */}
 			<CalendarWrap>
 				<FullCalendar
-					ref={calendarRef} // FullCalendar에 ref 연결
-					plugins={[dayGridPlugin]}
+					plugins={[dayGridPlugin, interactionPlugin]}
 					initialView="dayGridMonth"
 					headerToolbar={{
 						left: "prev",
@@ -358,40 +383,60 @@ function CalendarPage() {
 					}}
 					dayCellClassNames={(arg) => {
 						const dayOfWeek = arg.date.getDay();
-						if (dayOfWeek === 6) return "saturday"; // 토요일
-						if (dayOfWeek === 0) return "sunday"; // 일요일
-						return ""; // 평일은 클래스 추가 안함
+						if (dayOfWeek === 6) return "saturday";
+						if (dayOfWeek === 0) return "sunday";
+						return "";
 					}}
-					titleFormat={{ year: "numeric", month: "long" }} // 제목 포맷
-					events={events} // 캘린더에 이벤트 설정
-					datesSet={handleDatesSet} // 날짜 변경 시 이벤트 핸들러
+					titleFormat={{ year: "numeric", month: "long" }}
+					events={events}
+					datesSet={handleDatesSet}
+					selectable={true}
+					select={handleDateSelect}
 				/>
 			</CalendarWrap>
 
-			{/*월 지출 섹션 */}
 			<Section>
 				<SectionTitle>
 					{currentYear} - {currentMonth} 거래 내역
 				</SectionTitle>
 				<ExpenseDiv>
 					<ExpenseListWrap>
-						{transactionList.map((entry, index) => (
-							<div key={index}>
-								<h3>{entry.date}</h3> {/* 날짜 출력 */}
-								{entry.transactions.map(
-									(item, itemIndex) => (
-										<ExpenseList key={itemIndex}>
-											<Dot
-												isMinus={item.classNames.includes(
-													"minus-event"
-												)}
-											/>{" "}
-											{/* 도트 */}
-											{item.title}
-										</ExpenseList>
-									)
-								)}
-							</div>
+						<h3>{selectedDate}</h3> {/* 선택한 날짜 */}
+						{selectedDateTransactions.map((item, index) => (
+							<ExpenseList key={index}>
+								<Dot
+									isMinus={
+										item.in_des.includes("이체")
+											? false
+											: true
+									}
+								/>
+								<div
+									style={{
+										display: "flex",
+										justifyContent: "space-between",
+										width: "100%",
+									}}
+								>
+									<div>
+										<span>{item.in_des}</span>{" "}
+										{/* 거래 상세 내용 */}
+										<span
+											style={{
+												fontSize: "smaller",
+												display: "block",
+											}}
+										>
+											{item.tran_date_time}
+										</span>{" "}
+										{/* 거래 시간, 글씨 작게, 블록으로 표시하여 줄 바꿈 */}
+									</div>
+									<span style={{ marginLeft: "auto" }}>
+										{item.tran_amt.toLocaleString()}원
+									</span>{" "}
+									{/* 거래 금액, 오른쪽 배치 */}
+								</div>
+							</ExpenseList>
 						))}
 					</ExpenseListWrap>
 				</ExpenseDiv>
