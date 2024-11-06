@@ -407,7 +407,9 @@ const ExpenseListIcon = styled(FontAwesomeIcon)`
   }
 `;
 // 모달 스타일
-const Modal = styled.div`
+const Modal = styled.div.withConfig({
+  shouldForwardProp: (prop) => !["show", "fadeOut"].includes(prop),
+})`
   position: fixed;
   top: 50%;
   left: 50%;
@@ -416,8 +418,8 @@ const Modal = styled.div`
   color: white;
   padding: 20px;
   border-radius: 10px;
-  display: ${(props) => (props.show ? "block" : "none")};
-  opacity: ${(props) => (props.fadeOut ? 0 : 1)};
+  display: ${(props) => (props.$show ? "block" : "none")};
+  opacity: ${(props) => (props.$fadeOut ? 0 : 1)};
   transition: opacity 1s ease;
 `;
 const HomePage = () => {
@@ -434,6 +436,7 @@ const HomePage = () => {
   const [fadeOut, setFadeOut] = useState(false);
   // 원하는 형식으로 날짜를 설정합니다.
   const formattedDate = `${currentMonth.getMonth() + 1}월`;
+  const [userEmail, setUserEmail] = useState(""); // userEmail만 상태로 관리
 
   //   // 이전 달로 변경하는 함수
   //   const handlePrevMonth = () => {
@@ -476,6 +479,21 @@ const HomePage = () => {
   //       setLoading(false);
   //     }
   //   };
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/user/mypage");
+        const { userEmail } = response.data; // 이메일만 추출
+        setUserEmail(userEmail); // 상태 업데이트
+      } catch (error) {
+        console.error("사용자 정보를 가져오는 중 오류가 발생했습니다:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []); // 처음 컴포넌트가 마운트될 때 한 번만 실행
+
   const fetchSummaryData = async () => {
     setLoading(true);
     try {
@@ -554,18 +572,45 @@ const HomePage = () => {
   };
 
   console.log("총 토탈금액: " + totalPatterns);
-  const handleSendEmail = () => {
-    // 이메일 전송 로직 추가 (Axios 등을 사용하여 전송)
-    setShowModal(true);
-    setFadeOut(false);
-    // 1초 후 모달 사라지기
-    setTimeout(() => {
-      setFadeOut(true);
-      setTimeout(() => {
-        setShowModal(false);
-      }, 500); // fadeOut 애니메이션 후 모달 숨기기
-    }, 2000); // 2초 후 모달 사라지기
+
+  const handleSendEmail = async () => {
+    try {
+      console.log("가입할 때 입력한 이메일:", userEmail); // 이메일 값을 콘솔에 출력
+      const response = await axios.post(
+        "http://localhost:8000/api/report/visualization",
+        {
+          email: userEmail, //가입할 때 입력한 이메일 사용
+        },
+        {
+          headers: {
+            "Content-Type": "application/json", // JSON 형식 명시
+          },
+        }
+      );
+      console.log("백엔드 응답:", response); // 응답 확인
+      // 2. 백엔드에서 응답을 200 상태코드로 받으면 모달 띄우기
+      if (response.status === 200) {
+        setShowModal(true);
+        setFadeOut(false);
+
+        // 1초 후 모달 사라지기
+        setTimeout(() => {
+          setFadeOut(true);
+          setTimeout(() => {
+            setShowModal(false);
+          }, 500); // fadeOut 애니메이션 후 모달 숨기기
+        }, 2000); // 2초 후 모달 사라지기
+      } else {
+        // 상태 코드가 200이 아니면 에러 메시지 처리
+        alert("이메일 전송에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch (error) {
+      // 요청 실패 시 에러 처리
+      console.error("Email sending failed:", error);
+      alert("이메일 전송에 실패했습니다. 다시 시도해주세요.");
+    }
   };
+
   return (
     <Container>
       <TopNav>
@@ -690,7 +735,8 @@ const HomePage = () => {
       <SendEmailButton onClick={handleSendEmail}>
         내 금융 차트 이메일로 보내기
       </SendEmailButton>
-      <Modal show={showModal} fadeOut={fadeOut}>
+
+      <Modal $show={showModal} $fadeOut={fadeOut}>
         내 이메일로 전송이 완료되었습니다.
       </Modal>
     </Container>
